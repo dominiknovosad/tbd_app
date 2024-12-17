@@ -1,36 +1,46 @@
 package com.example.tbd.customer;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
 @Service
 public class CustomerService {
 
-    CustomerRepository repository;
+    private final CustomerRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    // doplnovanie a prepisovanie medzi sebou
-    @Autowired
-    public void CustomerRepository(CustomerRepository customerRepository) {
-        this.repository = customerRepository;
+    // Konštruktor na injekciu závislostí
+    public CustomerService(CustomerRepository repository, PasswordEncoder passwordEncoder) {
+        this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
-    // service pre vypisanie person podľa ID
+
+    // Nájde zákazníka podľa ID
     public Customer getCustomerById(Integer id) {
         return repository.findById(id).orElse(null);
     }
-    //service pre vypísanie všeho
+
+    // Nájde všetkých zákazníkov
     public List<Customer> getAll() {
         return repository.findAll();
     }
+
+    // Nájde všetkých zákazníkov podľa mena
     public List<Customer> findByAllName(String name) {
         return repository.findAllByName(name);
     }
+
+    // Nájde všetkých zákazníkov podľa priezviska
     public List<Customer> findByAllSurname(String surname) {
         return repository.findAllBySurname(surname);
     }
+
+    // Vytvorí nového zákazníka s šifrovaným heslom
     public Customer createCustomer(Customer customer) {
+        String encodedPassword = passwordEncoder.encode(customer.getPassword());
+        customer.setPassword(encodedPassword);
         return repository.save(customer);
     }
-
 }

@@ -9,42 +9,42 @@ import org.springframework.core.style.ToStringCreator;
 import java.util.Date;
 
 @Entity
-@Table(name = "customer") // Název tabulky v databázi, do které bude tato entita mapována.
-public class Customer  {
+@Table(name = "customer") // Názov tabuľky v databáze
+public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     @Column(name = "name")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
+    @NotNull
     private String name;
 
     @Column(name = "surname")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
+    @NotNull
     private String surname;
 
     @Column(name = "city")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
+    @NotNull
     private String city;
 
     @Column(name = "telephone")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
-    @Digits(fraction = 0, integer = 10) // Validace - telefonní číslo musí být číselné a maximálně 10 číslic dlouhé
+    @NotNull
+    @Digits(fraction = 0, integer = 10)
     private String telephone;
 
     @Column(name = "birthdate")
     @NotNull
-    @JsonFormat(pattern = "dd-mm-yyyy")  // Formát dátumu, ak je to potrebné
+    @JsonFormat(pattern = "dd-MM-yyyy") // Správny formát dátumu
     private Date birthdate;
 
     @Column(name = "email")
-    @NotNull // Validace - nesmí být prázdné
+    @NotNull
     private String email;
 
     @Column(name = "password")
-    @NotNull // Validace - nesmí být prázdné
+    @NotNull
     private String password;
-
 
     @Override
     public String toString() {
@@ -60,8 +60,7 @@ public class Customer  {
                 .toString();
     }
 
-
-    // Metoda getCity() slouží k získání hodnoty atributu city.
+    // Gettery a Settery
     public String getCity() {
         return this.city;
     }
@@ -114,12 +113,15 @@ public class Customer  {
         return email;
     }
 
-    public void setEmail(String email) {this.email = email;}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {this.password = password;}
-
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }

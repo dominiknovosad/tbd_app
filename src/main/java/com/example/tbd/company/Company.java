@@ -4,80 +4,47 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.core.style.ToStringCreator;
 
 import java.util.Date;
 
 @Entity
-@Table(name = "company") // Název tabulky v databázi, do které bude tato entita mapována.
-public class Company  {
+@Table(name = "company") // Názov tabuľky v databáze
+public class Company {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    @Column(name = "name")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
-    private String name;
 
-    @Column(name = "surname")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
-    private String surname;
+    @Column(name = "company_name")
+    @NotNull(message = "Názov spoločnosti nesmie byť prázdny")
+    private String companyName;
 
-    @Column(name = "city")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
-    private String city;
-
-    @Column(name = "telephone")
-    @NotNull // Validace - telefonní číslo nesmí být prázdné
-    @Digits(fraction = 0, integer = 10) // Validace - telefonní číslo musí být číselné a maximálně 10 číslic dlouhé
-    private String telephone;
-
-    @Column(name = "birthdate")
-    @NotNull
-    @JsonFormat(pattern = "dd-mm-yyyy")  // Formát dátumu, ak je to potrebné
-    private Date birthdate;
+    @Column(name = "ico")
+    @NotNull(message = "IČO nesmie byť prázdne")
+    private Integer ico;
 
     @Column(name = "email")
-    @NotNull // Validace - nesmí být prázdné
+    @NotNull(message = "Email nesmie byť prázdny")
     private String email;
 
+    @Column(name = "telephone")
+    @NotNull(message = "Telefónne číslo nesmie byť prázdne")
+    @Digits(fraction = 0, integer = 10, message = "Telefón musí mať maximálne 10 číslic")
+    private String telephone;
+
+    @Column(name = "address")
+    @NotNull(message = "Adresa nesmie byť prázdna")
+    private String address;
+
     @Column(name = "password")
-    @NotNull // Validace - nesmí být prázdné
+    @NotNull(message = "Heslo nesmie byť prázdne")
     private String password;
 
+    @Column(name = "created_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    private Date createdAt;
 
-    @Override
-    public String toString() {
-        return new ToStringCreator(this)
-                .append("id", this.getId())
-                .append("name", this.getName())
-                .append("surname", this.getSurname())
-                .append("birth_date", this.getBirthdate())
-                .append("email", this.getEmail())
-                .append("telephone", this.getTelephone())
-                .append("city", this.getCity())
-                .append("password", this.getPassword())
-                .toString();
-    }
-
-
-    // Metoda getCity() slouží k získání hodnoty atributu city.
-    public String getCity() {
-        return this.city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public String getTelephone() {
-        return this.telephone;
-    }
-
-    public void setTelephone(String telephone) {
-        this.telephone = telephone;
-    }
-
+    // Gettery a settery
     public Integer getId() {
         return id;
     }
@@ -86,40 +53,72 @@ public class Company  {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getCompanyName() {
+        return companyName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 
-    public String getSurname() {
-        return surname;
+    public Integer getIco() {
+        return ico;
     }
 
-    public void setSurname(String surname) {
-        this.surname = surname;
-    }
-
-    public Date getBirthdate() {
-        return birthdate;
-    }
-
-    public void setBirthdate(Date birthdate) {
-        this.birthdate = birthdate;
+    public void setIco(Integer ico) {
+        this.ico = ico;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {this.email = email;}
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTelephone() {
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {this.password = password;}
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Company{" +
+                "id=" + id +
+                ", companyName='" + companyName + '\'' +
+                ", ico=" + ico +
+                ", email='" + email + '\'' +
+                ", telephone='" + telephone + '\'' +
+                ", address='" + address + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }
