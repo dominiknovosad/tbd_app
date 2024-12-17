@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.core.style.ToStringCreator;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -16,35 +18,40 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     @NotNull
     private String name;
 
-    @Column(name = "surname")
+    @Column(name = "surname", nullable = false)
     @NotNull
     private String surname;
 
-    @Column(name = "city")
+    @Column(name = "city", nullable = false)
     @NotNull
     private String city;
 
-    @Column(name = "telephone")
+    @Column(name = "telephone", nullable = false)
     @NotNull
     @Digits(fraction = 0, integer = 10)
     private String telephone;
 
-    @Column(name = "birthdate")
+    @Column(name = "birthdate", nullable = false)
     @NotNull
-    @JsonFormat(pattern = "dd-MM-yyyy") // Správny formát dátumu
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private Date birthdate;
 
-    @Column(name = "email")
+    @Column(name = "email", nullable = false)
     @NotNull
     private String email;
 
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     @NotNull
     private String password;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime createdAt;
 
     @Override
     public String toString() {
@@ -57,6 +64,7 @@ public class Customer {
                 .append("telephone", this.getTelephone())
                 .append("city", this.getCity())
                 .append("password", this.getPassword())
+                .append("created_at", this.getCreatedAt())
                 .toString();
     }
 
@@ -123,5 +131,9 @@ public class Customer {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

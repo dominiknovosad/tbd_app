@@ -1,7 +1,9 @@
 package com.example.tbd.customer;
 
-import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -10,6 +12,9 @@ public class CustomerService {
 
     private final CustomerRepository repository;
     private final PasswordEncoder passwordEncoder;
+
+    // Pridanie Logger
+    private static final Logger logger = LoggerFactory.getLogger(CustomerService.class);
 
     // Konštruktor na injekciu závislostí
     public CustomerService(CustomerRepository repository, PasswordEncoder passwordEncoder) {
@@ -39,8 +44,13 @@ public class CustomerService {
 
     // Vytvorí nového zákazníka s šifrovaným heslom
     public Customer createCustomer(Customer customer) {
+        // Šifrovanie hesla
         String encodedPassword = passwordEncoder.encode(customer.getPassword());
         customer.setPassword(encodedPassword);
-        return repository.save(customer);
+        // Uloženie do DB
+        Customer savedCustomer = repository.save(customer);
+        // Logovanie v peknom formáte
+        logger.info("Nový zákazník bol úspešne vytvorený: {}", savedCustomer);
+        return savedCustomer;
     }
 }
