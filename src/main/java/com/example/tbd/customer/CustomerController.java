@@ -1,5 +1,7 @@
 package com.example.tbd.customer;
 
+import com.example.tbd.JwtTokenUtil;
+import com.example.tbd.company.CompanyRepository;
 import com.example.tbd.customer.LoginRequest; // Import novej triedy LoginRequest
 import io.jsonwebtoken.Jwts; // Import pre JWT token
 import io.jsonwebtoken.security.Keys; // Import pre generovanie bezpečného kľúča
@@ -11,8 +13,9 @@ import org.springframework.http.ResponseEntity; // Import pre ResponseEntity, kt
 import org.springframework.security.authentication.AuthenticationManager; // Import pre autentifikáciu
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // Import pre autentifikáciu s používateľským menom a heslom
 import org.springframework.security.core.Authentication; // Import pre autentifikáciu
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*; // Import pre vytváranie REST API
-
+import com.example.tbd.company.Company; // Import pre triedu Company
 import java.security.Key; // Import pre bezpečný kľúč na šifrovanie JWT
 import java.text.SimpleDateFormat; // Import pre formátovanie dátumu
 import java.time.Instant; // Import pre získanie aktuálneho času
@@ -21,6 +24,8 @@ import java.time.format.DateTimeFormatter; // Import pre formátovanie dátumu
 import java.util.List; // Import pre zoznam
 import java.util.Date; // Import pre dátum
 import java.time.ZoneId; // Import pre časovú zónu
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController // Označuje triedu ako REST kontrolér
 @RequestMapping("/customer") // Definuje základnú URL pre všetky endpointy v tejto triede
@@ -44,8 +49,17 @@ public class CustomerController {
         this.service = service;
         this.authenticationManager = authenticationManager;
         this.repository = repository;
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Inicializuje kľúč na šifrovanie JWT
+        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Inicializuje kľúč pre generovanie tokenu
     }
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;  // Injektovanie JwtTokenUtil
+
+    @Autowired
+    private CompanyRepository companyRepository;  // Injektovanie repository pre firmy
 
     // Pomocná metóda na konverziu LocalDate na java.util.Date
     public static Date convertToDate(LocalDate localDate) {
@@ -53,59 +67,70 @@ public class CustomerController {
     }
 
     // Endpoint pre prihlásenie zákazníka
+
     @PostMapping("/login")
-    @Operation(summary = "Prihlásenie zákazníka", description = "Autentifikácia zákazníka na základe e-mailu a hesla.")
+    @Operation(summary = "Prihlásenie zákazníka alebo firmy", description = "Autentifikácia používateľa na základe e-mailu/ičo a hesla.")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        System.out.println("DEBUG: Prijatý LoginRequest - Username: " + loginRequest.getUsername() + ", Password: " + loginRequest.getPassword());
+        Logger logger = LoggerFactory.getLogger(CustomerController.class); // Definícia logera
+
+        logger.debug("Prijatý LoginRequest - Username: {}, Password: {}", loginRequest.getUsername(), loginRequest.getPassword());
 
         // Validácia prichádzajúcich údajov
         if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty() ||
                 loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
-            System.out.println("DEBUG: Chýbajúce prihlasovacie údaje! Ukončujem spracovanie.");
+            logger.warn("Chýbajúce prihlasovacie údaje! Ukončujem spracovanie.");
             return ResponseEntity.badRequest().body("Chýbajúce prihlasovacie údaje!"); // Vráti chybu, ak sú údaje neúplné
         }
 
         try {
-            // Vyhľadanie zákazníka podľa emailu
-            Customer customer = repository.findByEmail(loginRequest.getUsername())
-                    .orElseThrow(() -> {
-                        System.out.println("DEBUG: Zákazník nenájdený pre e-mail: " + loginRequest.getUsername());
-                        return new RuntimeException("Zákazník nenájdený!"); // Vráti chybu, ak zákazník neexistuje
-                    });
+            Customer customer = null;
+            Company company = null;
 
-            // Autentifikácia pomocou e-mailu a hesla
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
+            // Skontroluj, či je email alebo IČO platný a podľa toho vykonaj autentifikáciu
+            if (loginRequest.getUsername().contains("@")) {
+                // Prihlásenie zákazníka podľa emailu
+                customer = repository.findByEmail(loginRequest.getUsername())
+                        .orElseThrow(() -> {
+                            logger.warn("Zákazník nenájdený pre e-mail: {}", loginRequest.getUsername());
+                            return new RuntimeException("Zákazník nenájdený!"); // Vráti chybu, ak zákazník neexistuje
+                        });
 
-            if (!authentication.isAuthenticated()) {
-                System.out.println("DEBUG: Nesprávne prihlasovacie údaje pre e-mail: " + loginRequest.getUsername());
-                return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Vráti chybu pri nesprávnych údajoch
+                // Autentifikácia pomocou e-mailu a hesla
+                if (!passwordEncoder.matches(loginRequest.getPassword(), customer.getPassword())) {
+                    logger.warn("Nesprávne prihlasovacie údaje pre e-mail: {}", loginRequest.getUsername());
+                    return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Nesprávne heslo
+                }
+
+                // Vytvorenie JWT tokenu pre zákazníka
+                String token = jwtTokenUtil.generateToken(customer.getEmail(), customer.getId(), customer.getEmail());
+                logger.info("Prihlásenie úspešné. Vygenerovaný token pre zákazníka: {}", customer.getEmail());
+                return ResponseEntity.ok(new LoginResponse(token, customer.getId()));
+
+            } else {
+                // Prihlásenie firmy podľa IČO
+                company = companyRepository.findByIco(Integer.parseInt(loginRequest.getUsername()))
+                        .orElseThrow(() -> {
+                            logger.warn("Firma nenájdená pre IČO: {}", loginRequest.getUsername());
+                            return new RuntimeException("Firma nenájdená!"); // Vráti chybu, ak firma neexistuje
+                        });
+
+                // Autentifikácia pomocou IČO a hesla
+                if (!passwordEncoder.matches(loginRequest.getPassword(), company.getPassword())) {
+                    logger.warn("Nesprávne prihlasovacie údaje pre IČO: {}", loginRequest.getUsername());
+                    return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Nesprávne heslo
+                }
+
+                // Vytvorenie JWT tokenu pre firmu
+                String token = jwtTokenUtil.generateToken(company.getIco().toString(), company.getId(), company.getIco().toString());
+                logger.info("Prihlásenie úspešné. Vygenerovaný token pre firmu: {}", company.getIco());
+                return ResponseEntity.ok(new LoginResponse(token, company.getId()));
             }
 
-            // Vytvorenie JWT tokenu s nastavením času vydania a vypršania platnosti
-            Date issuedAt = Date.from(Instant.now()); // Nastaví čas vydania tokenu
-            Date expiration = Date.from(Instant.now().plusMillis(86400000)); // Nastaví čas vypršania platnosti tokenu na 24 hodín
-
-            String token = Jwts.builder()
-                    .setSubject(customer.getEmail()) // Nastaví email zákazníka ako subject
-                    .claim("customerId", customer.getId()) // Pridá customerId do claimu
-                    .setIssuedAt(issuedAt) // Nastaví čas vydania
-                    .setExpiration(expiration) // Nastaví vypršanie platnosti
-                    .signWith(secretKey) // Podepíše token s tajným kľúčom
-                    .compact(); // Skomprimuje a vygeneruje finálny token
-
-            System.out.println("DEBUG: Vygenerovaný token pre zákazníka: " + customer.getEmail());
-            return ResponseEntity.ok(new LoginResponse(token, customer.getId())); // Vráti token a ID zákazníka
-
         } catch (RuntimeException e) {
-            System.out.println("DEBUG: Chyba pri prihlásení: " + e.getMessage());
+            logger.error("Chyba pri prihlásení: {}", e.getMessage());
             return ResponseEntity.status(401).body(e.getMessage()); // Vráti chybu pri nesprávnom prihlásení
         } catch (Exception e) {
-            System.out.println("DEBUG: Neznáma chyba pri prihlásení: " + e.getMessage());
+            logger.error("Neznáma chyba pri prihlásení: {}", e.getMessage());
             return ResponseEntity.status(500).body("Interná chyba servera!"); // Vráti internú chybu servera
         }
     }

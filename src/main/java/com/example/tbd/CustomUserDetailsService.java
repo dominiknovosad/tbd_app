@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.User;  // Import pre použi
 import org.springframework.security.core.userdetails.UserDetails;  // Import pre UserDetails rozhranie
 import org.springframework.security.core.userdetails.UserDetailsService;  // Import rozhrania pre načítavanie údajov o používateľovi
 import org.springframework.security.core.userdetails.UsernameNotFoundException;  // Import výnimky pre neexistujúceho používateľa
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;  // Import pre označenie triedy ako služba
 
 import java.util.ArrayList;  // Import pre použitie zoznamu (v tomto prípade prázdneho)
@@ -18,20 +19,20 @@ public class CustomUserDetailsService implements UserDetailsService {  // Implem
     private CustomerRepository repository;  // Automatická injekcia repository pre prístup k databáze zákazníkov
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {  // Implementácia metódy loadUserByUsername
-        System.out.println("DEBUG: Načítavam zákazníka pre email: " + email);  // Debug výpis pre kontrolu, aký email sa načítava
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {  // Implementácia metódy loadUserByUsername
+        System.out.println("DEBUG: Načítavam zákazníka pre email/ičo: " + username);  // Debug výpis pre kontrolu, aký username sa načítava
 
-        // Validácia: Kontrola prázdneho alebo null emailu
-        if (email == null || email.trim().isEmpty()) {  // Kontrola, či je email prázdny alebo null
-            System.out.println("DEBUG: Prázdny alebo null email zadaný!");  // Debug výpis v prípade neplatného emailu
-            throw new UsernameNotFoundException("E-mail nemôže byť prázdny alebo null!");  // Vyhodenie výnimky pre neplatný email
+        // Validácia: Kontrola prázdneho alebo null username
+        if (username == null || username.trim().isEmpty()) {  // Kontrola, či je username prázdny alebo null
+            System.out.println("DEBUG: Prázdny alebo null email zadaný!");  // Debug výpis v prípade neplatného username
+            throw new UsernameNotFoundException("E-mail/IČO nemôže byť prázdny alebo null!");  // Vyhodenie výnimky pre neplatný email/IČO
         }
 
-        // Hľadanie zákazníka v databáze na základe emailu
-        Customer customer = repository.findByEmail(email)  // Vyhľadanie zákazníka podľa emailu
+        // Hľadanie zákazníka v databáze na základe emailu (alebo IČO)
+        Customer customer = repository.findByEmail(username)  // Vyhľadanie zákazníka podľa emailu
                 .orElseThrow(() -> {  // Ak zákazník neexistuje, vyhodí výnimku
-                    System.out.println("DEBUG: Zákazník nenájdený pre email: " + email);  // Debug výpis v prípade, že zákazník neexistuje
-                    return new UsernameNotFoundException("Zákazník nenájdený: " + email);  // Vyhodenie výnimky
+                    System.out.println("DEBUG: Zákazník nenájdený pre e-mail: " + username);  // Debug výpis v prípade, že zákazník neexistuje
+                    return new UsernameNotFoundException("Zákazník nenájdený: " + username);  // Vyhodenie výnimky
                 });
 
         System.out.println("DEBUG: Načítaný zákazník - email: " + customer.getEmail());  // Debug výpis pre načítaného zákazníka
