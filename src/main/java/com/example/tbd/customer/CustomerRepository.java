@@ -10,4 +10,5 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     public List<Customer> findAllBySurname(String surname);
     Optional<Customer> findByEmail(String email);
 
+    boolean existsById(Integer id); // Checks if a customer exists by their ID
 }

@@ -1,34 +1,40 @@
 package com.example.tbd.customer;
 
-import com.example.tbd.customer.LoginRequest; // Import novej triedy
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys; // Import pre Keys
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.example.tbd.customer.LoginRequest; // Import novej triedy LoginRequest
+import io.jsonwebtoken.Jwts; // Import pre JWT token
+import io.jsonwebtoken.security.Keys; // Import pre generovanie bezpečného kľúča
+import io.swagger.v3.oas.annotations.Operation; // Import pre anotácie OpenAPI
+import io.swagger.v3.oas.annotations.tags.Tag; // Import pre tagy OpenAPI
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value; // Import pre získanie hodnoty z application.properties
+import org.springframework.http.ResponseEntity; // Import pre ResponseEntity, ktorý sa používa na vytváranie odpovedí
+import org.springframework.security.authentication.AuthenticationManager; // Import pre autentifikáciu
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // Import pre autentifikáciu s používateľským menom a heslom
+import org.springframework.security.core.Authentication; // Import pre autentifikáciu
+import org.springframework.web.bind.annotation.*; // Import pre vytváranie REST API
 
-import java.security.Key; // Import pre bezpečný kľúč
-import java.util.Date;
-import java.util.List;
+import java.security.Key; // Import pre bezpečný kľúč na šifrovanie JWT
+import java.text.SimpleDateFormat; // Import pre formátovanie dátumu
+import java.time.Instant; // Import pre získanie aktuálneho času
+import java.time.LocalDate; // Import pre dátum
+import java.time.format.DateTimeFormatter; // Import pre formátovanie dátumu
+import java.util.List; // Import pre zoznam
+import java.util.Date; // Import pre dátum
+import java.time.ZoneId; // Import pre časovú zónu
 
-@RestController
-@RequestMapping("/customer")
-@CrossOrigin(origins = "http://localhost:55555/")
-@Tag(name = "Customer Controller", description = "API pre správu zákazníkov a autentifikáciu")
+@RestController // Označuje triedu ako REST kontrolér
+@RequestMapping("/customer") // Definuje základnú URL pre všetky endpointy v tejto triede
+@CrossOrigin(origins = "http://localhost:55555/") // Umožňuje prístup z front-end aplikácie na tomto portu
+@Tag(name = "Customer Controller", description = "API pre správu zákazníkov a autentifikáciu") // OpenAPI anotácia pre generovanie dokumentácie
 public class CustomerController {
 
-    private final CustomerService service;
-    private final CustomerRepository repository;
-    private final AuthenticationManager authenticationManager;
+    private final CustomerService service; // Služba na spracovanie logiky pre zákazníkov
+    private final CustomerRepository repository; // Repository pre komunikáciu s databázou
+    private final AuthenticationManager authenticationManager; // Manažér autentifikácie na autentifikovanie používateľov
 
-    // Načítanie tajného kľúča z konfigurácie
-    private final Key secretKey;
+    private final Key secretKey; // Kľúč pre šifrovanie JWT tokenu
 
+    // Konštruktor triedy, injektuje závislosti
     @Autowired
     public CustomerController(
             CustomerService service,
@@ -38,91 +44,138 @@ public class CustomerController {
         this.service = service;
         this.authenticationManager = authenticationManager;
         this.repository = repository;
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Inicializuje kľúč na šifrovanie JWT
     }
 
+    // Pomocná metóda na konverziu LocalDate na java.util.Date
+    public static Date convertToDate(LocalDate localDate) {
+        return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()); // Konvertuje LocalDate na java.util.Date
+    }
+
+    // Endpoint pre prihlásenie zákazníka
     @PostMapping("/login")
+    @Operation(summary = "Prihlásenie zákazníka", description = "Autentifikácia zákazníka na základe e-mailu a hesla.")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Debugging: Výpis prijatého loginRequest
         System.out.println("DEBUG: Prijatý LoginRequest - Username: " + loginRequest.getUsername() + ", Password: " + loginRequest.getPassword());
 
-        // Kontrola chýbajúcich údajov
+        // Validácia prichádzajúcich údajov
         if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty() ||
                 loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
-            System.out.println("DEBUG: Chýbajúce prihlasovacie údaje!");
-            return ResponseEntity.badRequest().body("Chýbajúce prihlasovacie údaje!");
+            System.out.println("DEBUG: Chýbajúce prihlasovacie údaje! Ukončujem spracovanie.");
+            return ResponseEntity.badRequest().body("Chýbajúce prihlasovacie údaje!"); // Vráti chybu, ak sú údaje neúplné
         }
 
-        // Pred autentifikáciou vrátime správu o prijatí requestu
-        System.out.println("DEBUG: Request prijatý, spracovávam autentifikáciu...");
-
         try {
-            // Autentifikácia používateľa
-            authenticationManager.authenticate(
+            // Vyhľadanie zákazníka podľa emailu
+            Customer customer = repository.findByEmail(loginRequest.getUsername())
+                    .orElseThrow(() -> {
+                        System.out.println("DEBUG: Zákazník nenájdený pre e-mail: " + loginRequest.getUsername());
+                        return new RuntimeException("Zákazník nenájdený!"); // Vráti chybu, ak zákazník neexistuje
+                    });
+
+            // Autentifikácia pomocou e-mailu a hesla
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
                             loginRequest.getPassword()
                     )
             );
 
-            // Vyhľadanie zákazníka podľa e-mailu
-            Customer customer = repository.findByEmail(loginRequest.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Zákazník nenájdený!"));
+            if (!authentication.isAuthenticated()) {
+                System.out.println("DEBUG: Nesprávne prihlasovacie údaje pre e-mail: " + loginRequest.getUsername());
+                return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Vráti chybu pri nesprávnych údajoch
+            }
 
-            // Generovanie JWT tokenu
+            // Vytvorenie JWT tokenu s nastavením času vydania a vypršania platnosti
+            Date issuedAt = Date.from(Instant.now()); // Nastaví čas vydania tokenu
+            Date expiration = Date.from(Instant.now().plusMillis(86400000)); // Nastaví čas vypršania platnosti tokenu na 24 hodín
+
             String token = Jwts.builder()
-                    .setSubject(customer.getEmail())
-                    .claim("customerId", customer.getId())
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24 hodín
-                    .signWith(Keys.hmacShaKeyFor("verysecuresecretkeywith256bits1234567890".getBytes())) // Bezpečný kľúč
-                    .compact();
+                    .setSubject(customer.getEmail()) // Nastaví email zákazníka ako subject
+                    .claim("customerId", customer.getId()) // Pridá customerId do claimu
+                    .setIssuedAt(issuedAt) // Nastaví čas vydania
+                    .setExpiration(expiration) // Nastaví vypršanie platnosti
+                    .signWith(secretKey) // Podepíše token s tajným kľúčom
+                    .compact(); // Skomprimuje a vygeneruje finálny token
 
-            System.out.println("DEBUG: Vygenerovaný token pre používateľa: " + customer.getEmail());
-            return ResponseEntity.ok(new LoginResponse(token, customer.getId()));
+            System.out.println("DEBUG: Vygenerovaný token pre zákazníka: " + customer.getEmail());
+            return ResponseEntity.ok(new LoginResponse(token, customer.getId())); // Vráti token a ID zákazníka
 
+        } catch (RuntimeException e) {
+            System.out.println("DEBUG: Chyba pri prihlásení: " + e.getMessage());
+            return ResponseEntity.status(401).body(e.getMessage()); // Vráti chybu pri nesprávnom prihlásení
         } catch (Exception e) {
-            System.out.println("DEBUG: Chyba autentifikácie: " + e.getMessage());
-            return ResponseEntity.status(401).body("Neplatné prihlasovacie údaje!");
+            System.out.println("DEBUG: Neznáma chyba pri prihlásení: " + e.getMessage());
+            return ResponseEntity.status(500).body("Interná chyba servera!"); // Vráti internú chybu servera
         }
     }
 
+    // Endpoint na registráciu nového zákazníka
+    @PostMapping("/register")
+    @Operation(summary = "Register a new customer", description = "Stores a new customer in the system.")
+    public ResponseEntity<?> saveCustomer(@RequestBody Customer customer) {
+        System.out.println("DEBUG: Attempting to register customer with email: " + customer.getEmail());
 
-    @Operation(summary = "Získa zákazníka podľa ID", description = "Vráti detail zákazníka na základe jeho ID.")
+        try {
+            // Validácia povinných polí
+            if (customer.getName() == null || customer.getName().isEmpty() ||
+                    customer.getSurname() == null || customer.getSurname().isEmpty() ||
+                    customer.getCity() == null || customer.getCity().isEmpty() ||
+                    customer.getTelephone() == null || customer.getTelephone().isEmpty() ||
+                    customer.getEmail() == null || customer.getEmail().isEmpty() ||
+                    customer.getPassword() == null || customer.getPassword().isEmpty()) {
+                return ResponseEntity.badRequest().body("Missing required customer fields!"); // Chyba ak chýbajú povinné údaje
+            }
+
+            // Dodatočné validácie
+            if (customer.getBirthdate() == null) {
+                return ResponseEntity.badRequest().body("Birthdate is required."); // Chyba ak chýba dátum narodenia
+            }
+
+            // Uloženie zákazníka do systému
+            Customer savedCustomer = service.createCustomer(customer);
+            System.out.println("DEBUG: Customer successfully registered with ID: " + savedCustomer.getId());
+
+            return ResponseEntity.ok(savedCustomer); // Vráti uloženého zákazníka
+
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error while registering customer: " + e.getMessage());
+            return ResponseEntity.status(500).body("An error occurred while processing the request."); // Vráti chybu pri spracovaní požiadavky
+        }
+    }
+
+    // Endpoint na získanie zákazníka podľa ID
     @GetMapping("/{id}")
+    @Operation(summary = "Získa zákazníka podľa ID", description = "Vráti detail zákazníka na základe jeho ID.")
     public ResponseEntity<Customer> getCustomer(@PathVariable("id") Integer id) {
         System.out.println("DEBUG: Načítavanie zákazníka s ID: " + id);
-        return ResponseEntity.ok(service.getCustomerById(id));
+        return ResponseEntity.ok(service.getCustomerById(id)); // Vráti zákazníka podľa ID
     }
 
-    @Operation(summary = "Získa všetkých zákazníkov", description = "Vráti zoznam všetkých zákazníkov.")
+    // Endpoint na získanie všetkých zákazníkov
     @GetMapping("/all")
+    @Operation(summary = "Získa všetkých zákazníkov", description = "Vráti zoznam všetkých zákazníkov.")
     public ResponseEntity<List<Customer>> getAllCustomers() {
         System.out.println("DEBUG: Načítavanie všetkých zákazníkov");
-        return ResponseEntity.ok(service.getAll());
+        return ResponseEntity.ok(service.getAll()); // Vráti zoznam všetkých zákazníkov
     }
 
-    @Operation(summary = "Registruje nového zákazníka", description = "Uloží nového zákazníka do systému.")
-    @PostMapping("/register")
-    public ResponseEntity<Customer> saveCustomer(@RequestBody Customer customer) {
-        System.out.println("DEBUG: Pokus o registráciu zákazníka s emailom: " + customer.getEmail());
-        Customer savedCustomer = service.createCustomer(customer);
-        System.out.println("DEBUG: Zákazník úspešne registrovaný s ID: " + savedCustomer.getId());
-        return ResponseEntity.ok(savedCustomer);
+    // Trieda pre odpoveď pri prihlásení obsahujúca token a ID zákazníka
+    static class LoginResponse {
+        private final String token; // JWT token
+        private final Integer customerId; // ID zákazníka
+
+        public LoginResponse(String token, Integer customerId) {
+            this.token = token;
+            this.customerId = customerId;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public Integer getCustomerId() {
+            return customerId;
+        }
     }
-
-
-// DTO pre odpoveď s JWT tokenom a ID zákazníka
-class LoginResponse {
-    private String token;
-    private Integer customerId;
-
-    public LoginResponse(String token, Integer customerId) {
-        this.token = token;
-        this.customerId = customerId;
-    }
-
-    public String getToken() { return token; }
-    public Integer getCustomerId() { return customerId; }
-}
 }
