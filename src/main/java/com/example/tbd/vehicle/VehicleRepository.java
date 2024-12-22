@@ -15,6 +15,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
     // Find vehicle by VIN
     Optional<Vehicle> findByVin(String vin);
 
+    Optional<Vehicle> findByPlateNo(String plateNo);
+
     // Find vehicles by customer ID
     List<Vehicle> findByCustomerId(Integer customerId);
 }

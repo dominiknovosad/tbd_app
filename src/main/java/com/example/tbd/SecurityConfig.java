@@ -86,7 +86,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // Povolenie všetkých endpointov
-                        .allowedOrigins("http://localhost:32032/","http://localhost:8080/")  // Povolenie všetkých portov na localhost
+                        .allowedOrigins("http://localhost:37017/","http://localhost:8080/")  // Povolenie všetkých portov na localhost
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Povolené HTTP metódy
                         .allowedHeaders("Authorization", "Content-Type", "Accept")  // Povolené hlavičky ako Authorization
                         .allowCredentials(true);  // Povolenie prenosu cookies

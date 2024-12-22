@@ -19,23 +19,23 @@ public class CompanyUserDetailsService implements UserDetailsService {  // Imple
 
     @Override
     public UserDetails loadUserByUsername(String ico) throws UsernameNotFoundException {  // Implementácia metódy loadUserByUsername
-        System.out.println("DEBUG: Načítavam firmu pre IČO: " + ico);  // Debug výpis pre kontrolu, aké IČO sa načítava
+      //  System.out.println("DEBUG: Načítavam firmu pre IČO: " + ico);  // Debug výpis pre kontrolu, aké IČO sa načítava
 
         // Validácia: Kontrola prázdneho alebo null IČO
         if (ico == null || ico.trim().isEmpty() || !ico.matches("\\d+")) {  // Kontrola, či je IČO neplatné
-            System.out.println("DEBUG: IČO je prázdne, null alebo obsahuje neplatné znaky!");  // Debug výpis v prípade neplatného IČO
+           // System.out.println("DEBUG: IČO je prázdne, null alebo obsahuje neplatné znaky!");  // Debug výpis v prípade neplatného IČO
             throw new UsernameNotFoundException("IČO nemôže byť prázdne, null alebo neplatné: " + ico);  // Vyhodenie výnimky pre neplatné IČO
         }
 
         // Hľadanie firmy v databáze na základe IČO
         Company company = repository.findByIco(Integer.parseInt(ico))  // Vyhľadanie firmy podľa IČO
                 .orElseThrow(() -> {  // Ak firma neexistuje, vyhodí výnimku
-                    System.out.println("DEBUG: Firma nenájdená pre IČO: " + ico);  // Debug výpis v prípade, že firma neexistuje
+                    //System.out.println("DEBUG: Firma nenájdená pre IČO: " + ico);  // Debug výpis v prípade, že firma neexistuje
                     return new UsernameNotFoundException("Firma nenájdená: " + ico);  // Vyhodenie výnimky
                 });
 
-        System.out.println("DEBUG: Načítaná Firma - IČO: " + company.getIco());  // Debug výpis pre načítanú firmu
-        System.out.println("DEBUG: Načítané heslo: " + company.getPassword());  // Debug výpis pre načítané heslo firmy
+        //System.out.println("DEBUG: Načítaná Firma - IČO: " + company.getIco());  // Debug výpis pre načítanú firmu
+        //System.out.println("DEBUG: Načítané heslo: " + company.getPassword());  // Debug výpis pre načítané heslo firmy
 
         // Vytvorenie a vrátenie objektu User pre autentifikáciu
         return new User(String.valueOf(company.getIco()), company.getPassword(), new ArrayList<>());  // Vytvorenie objektu User, ktorý sa používa pri autentifikácii

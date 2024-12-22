@@ -1,6 +1,7 @@
 package com.example.tbd.vehicle;
 
 import com.fasterxml.jackson.annotation.JsonFormat;  // Import na formátovanie dátumu pre JSON
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;  // Import pre JPA anotácie
 import org.hibernate.annotations.CreationTimestamp;  // Import pre automatické nastavenie dátumu a času vytvorenia
 
@@ -27,15 +28,19 @@ public class Vehicle {
     // Formátovanie dátumu registrácie vozidla na formát "yyyy-MM-dd"
     @Column(name = "registered_at", nullable = false)  // Názov stĺpca pre dátum registrácie vozidla
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")  // Formát pre JSON výstup
-    private LocalDate registeredAt;  // Dátum registrácie vozidla (LocalDate obsahuje iba dátum)
+    private String registeredAt;  // Dátum registrácie vozidla (LocalDate obsahuje iba dátum)
 
     @Column(name = "VIN", unique = true, nullable = false, length = 17)  // Názov stĺpca pre VIN kód s dĺžkou 17 znakov a unikátnosťou
     private String vin;  // VIN kód vozidla
 
+    @Column(name = "plate_no", unique = true, nullable = false)
+    @JsonProperty("plate_no")
+    private String plateNo;
+
     // Vytvorenie dátumu a času pre časovú značku "created_at", nastavuje sa automaticky
     @Column(name = "created_at", nullable = false, updatable = false)  // Stĺpec pre dátum a čas vytvorenia, ktorý sa neaktualizuje
     @CreationTimestamp  // Automatické nastavenie času vytvorenia
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")  // Formát pre JSON výstup, zahŕňa aj čas
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", shape = JsonFormat.Shape.STRING)  // Formát pre JSON výstup, zahŕňa aj čas
     private LocalDateTime createdAt;  // Dátum a čas vytvorenia vozidla (LocalDateTime obsahuje dátum aj čas)
 
     // Gettery a settery pre všetky atribúty
@@ -71,11 +76,11 @@ public class Vehicle {
         this.model = model;
     }
 
-    public LocalDate getRegisteredAt() {
+    public String getRegisteredAt() {
         return registeredAt;
     }
 
-    public void setRegisteredAt(LocalDate registeredAt) {
+    public void setRegisteredAt(String registeredAt) {
         this.registeredAt = registeredAt;
     }
 
@@ -85,6 +90,14 @@ public class Vehicle {
 
     public void setVin(String vin) {
         this.vin = vin;
+    }
+
+    public String getPlateNo() {
+        return plateNo;
+    }
+
+    public void setPlateNo(String plateNo) {
+        this.plateNo = plateNo;
     }
 
     public LocalDateTime getCreatedAt() {

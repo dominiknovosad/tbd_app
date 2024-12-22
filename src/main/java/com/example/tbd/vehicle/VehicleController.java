@@ -1,6 +1,7 @@
 package com.example.tbd.vehicle;
 
 import com.example.tbd.customer.CustomerRepository;  // Import pre CustomerRepository, ktoré sa používa na kontrolu existencie zákazníka
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +14,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/vehicle")  // Definuje URL cestu pre všetky endpointy tejto triedy
+@Tag(name = "Vehicle Controller", description = "API pre správu vozidel")
 public class VehicleController {
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);  // SLF4J logger na logovanie informácií
@@ -28,22 +32,23 @@ public class VehicleController {
 
     // Endpoint pre pridanie nového vozidla
     @PostMapping("/add")
-    public ResponseEntity<?> addVehicle(@RequestBody VehicleRequest vehicleRequest) {
-        logger.debug("Prijatý VehicleRequest - {}", vehicleRequest);  // Logovanie prijatého požiadavky na pridanie vozidla
+    public ResponseEntity<?> addVehicle(@RequestBody Vehicle vehicle) {
+        logger.debug("Prijatý VehicleRequest - {}", vehicle);  // Logovanie prijatého požiadavky na pridanie vozidla
 
         // Validácia vstupných údajov
-        if (vehicleRequest.getCustomerId() == null || vehicleRequest.getCustomerId() <= 0 ||
-                vehicleRequest.getBrand() == null || vehicleRequest.getBrand().isEmpty() ||
-                vehicleRequest.getModel() == null || vehicleRequest.getModel().isEmpty() ||
-                vehicleRequest.getRegisteredAt() == null || vehicleRequest.getRegisteredAt().isEmpty() ||
-                vehicleRequest.getVin() == null || vehicleRequest.getVin().isEmpty()) {
+        if (vehicle.getCustomerId() == null || vehicle.getCustomerId() <= 0 ||
+                vehicle.getBrand() == null || vehicle.getBrand().isEmpty() ||
+                vehicle.getModel() == null || vehicle.getModel().isEmpty() ||
+                vehicle.getRegisteredAt() == null || vehicle.getRegisteredAt().isEmpty() ||
+                vehicle.getVin() == null || vehicle.getVin().isEmpty() ||
+                vehicle.getPlateNo() == null || vehicle.getPlateNo().isEmpty()) {
             return ResponseEntity.badRequest().body("Neplatné údaje pre vozidlo!");  // Vráti chybu ak sú údaje neúplné
         }
 
         // Kontrola, či zákazník s daným ID existuje
-        boolean customerExists = customerRepository.existsById(vehicleRequest.getCustomerId());
+        boolean customerExists = customerRepository.existsById(vehicle.getCustomerId());
         if (!customerExists) {
-            logger.warn("Zákazník s ID {} neexistuje.", vehicleRequest.getCustomerId());  // Logovanie, ak zákazník neexistuje
+            logger.warn("Zákazník s ID {} neexistuje.", vehicle.getCustomerId());  // Logovanie, ak zákazník neexistuje
             return ResponseEntity.badRequest().body("Zákazník s poskytnutým ID neexistuje.");
         }
 
@@ -51,26 +56,35 @@ public class VehicleController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         LocalDate registeredAt;
         try {
-            registeredAt = LocalDate.parse(vehicleRequest.getRegisteredAt(), formatter);  // Pokus o parsing dátumu
+            registeredAt = LocalDate.parse(vehicle.getRegisteredAt(), formatter);  // Pokus o parsing dátumu
         } catch (DateTimeParseException e) {
             return ResponseEntity.badRequest().body("Neplatný formát dátumu registrácie vozidla. Očakávaný formát: DD.MM.YYYY.");  // Chyba pri neplatnom formáte dátumu
         }
 
         try {
             // Vytvorenie a uloženie nového vozidla
-            Vehicle vehicle = new Vehicle();
-            vehicle.setCustomerId(vehicleRequest.getCustomerId());
-            vehicle.setBrand(vehicleRequest.getBrand());
-            vehicle.setModel(vehicleRequest.getModel());
-            vehicle.setRegisteredAt(registeredAt);  // Nastavenie správneho dátumu registrácie
-            vehicle.setVin(vehicleRequest.getVin());
-            vehicle.setCreatedAt(LocalDateTime.now());  // Uloženie aktuálneho dátumu a času ako LocalDateTime
+            Vehicle newvehicle = new Vehicle();
+            newvehicle.setCustomerId(vehicle.getCustomerId());
+            newvehicle.setBrand(vehicle.getBrand());
+            newvehicle.setModel(vehicle.getModel());
+            newvehicle.setRegisteredAt(vehicle.getRegisteredAt());  // Nastavenie správneho dátumu registrácie
+            newvehicle.setVin(vehicle.getVin());
+            newvehicle.setPlateNo(vehicle.getPlateNo());
+            newvehicle.setCreatedAt(LocalDateTime.now());  // Uloženie aktuálneho dátumu a času ako LocalDateTime
 
-            vehicleRepository.save(vehicle);  // Uloženie vozidla do databázy
+            // Uloženie vozidla do databázy
+            vehicleRepository.save(newvehicle);
+
+            // Logovanie úspešného pridania vozidla
+            logger.info("Vozidlo úspešne pridané pre uživateľa {}: Značka: {}, Model: {}, VIN: {}, ŠPZ: {}, Dátum registrácie: {}",
+                    newvehicle.getCustomerId(),newvehicle.getBrand(), newvehicle.getModel(),
+                    newvehicle.getVin(), newvehicle.getPlateNo(),
+                    newvehicle.getRegisteredAt());
 
             return ResponseEntity.ok("Vozidlo úspešne pridané.");  // Vráti úspešnú odpoveď
         } catch (Exception e) {
-            logger.error("Chyba pri pridávaní vozidla: {}", e.getMessage(), e);  // Logovanie chyby pri ukladaní vozidla
+            // Logovanie chyby pri ukladaní vozidla
+            logger.error("Chyba pri pridávaní vozidla: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");  // Vráti internú chybu servera
         }
     }

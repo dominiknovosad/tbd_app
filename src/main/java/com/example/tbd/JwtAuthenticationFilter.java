@@ -70,12 +70,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Date expiration = claims.getExpiration();  // Získanie dátumu exspirácie tokenu
 
             // Debug výpisy pre kontrolu platnosti tokenu
-            System.out.println("DEBUG: Token je validný. Username: " + username + ", IČO: " + companyICO);
-            System.out.println("DEBUG: Expirácia tokenu: " + expiration);
+          //  System.out.println("DEBUG: Token je validný. Username: " + username + ", IČO: " + companyICO);
+           // System.out.println("DEBUG: Expirácia tokenu: " + expiration);
 
             // Kontrola, či token ešte neexpiruje
             if (expiration.before(new Date())) {
-                System.out.println("DEBUG: Token expiroval.");
+               // System.out.println("DEBUG: Token expiroval.");
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -108,6 +108,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Nastavenie podrobností autentifikácie zo zdroja požiadavky
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);  // Nastavenie autentifikácie v kontexte
-        System.out.println("DEBUG: Autentifikácia úspešne nastavená.");  // Debug výpis
+        //System.out.println("DEBUG: Autentifikácia úspešne nastavená.");  // Debug výpis
     }
 }
