@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager; // Imp
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // Import pre autentifikáciu s používateľským menom a heslom
 import org.springframework.security.core.Authentication; // Import pre autentifikáciu
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*; // Import pre vytváranie REST API
 import com.example.tbd.company.Company; // Import pre triedu Company
 import java.security.Key; // Import pre bezpečný kľúč na šifrovanie JWT
@@ -29,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 @RestController // Označuje triedu ako REST kontrolér
 @RequestMapping("/customer") // Definuje základnú URL pre všetky endpointy v tejto triede
-@CrossOrigin(origins = "http://localhost:55555/") // Umožňuje prístup z front-end aplikácie na tomto portu
 @Tag(name = "Customer Controller", description = "API pre správu zákazníkov a autentifikáciu") // OpenAPI anotácia pre generovanie dokumentácie
 public class CustomerController {
 
@@ -60,6 +60,8 @@ public class CustomerController {
 
     @Autowired
     private CompanyRepository companyRepository;  // Injektovanie repository pre firmy
+    @Autowired
+    private CustomerService customerService;
 
     // Pomocná metóda na konverziu LocalDate na java.util.Date
     public static Date convertToDate(LocalDate localDate) {
@@ -185,6 +187,17 @@ public class CustomerController {
         return ResponseEntity.ok(service.getAll()); // Vráti zoznam všetkých zákazníkov
     }
 
+    @PutMapping("/editprofile/{id}")
+    public ResponseEntity<String> editProfile(@PathVariable Long id,
+                                              @RequestBody @Validated EditProfileRequest editProfileRequest) {
+        boolean isUpdated = customerService.updateCustomerProfile(Math.toIntExact(id), editProfileRequest);
+
+        if (isUpdated) {
+            return ResponseEntity.ok("Profil bol úspešne aktualizovaný.");
+        } else {
+            return ResponseEntity.status(404).body("Zákazník s týmto ID neexistuje.");
+        }
+    }
     // Trieda pre odpoveď pri prihlásení obsahujúca token a ID zákazníka
     static class LoginResponse {
         private final String token; // JWT token

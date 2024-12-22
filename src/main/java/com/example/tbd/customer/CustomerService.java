@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service; // Import pre označenie triedy a
 import org.slf4j.Logger; // Import pre logovanie
 import org.slf4j.LoggerFactory; // Import pre vytvorenie loggeru
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List; // Import pre zoznam zákazníkov
 
 @Service // Označuje túto triedu ako Spring service, ktorá spravuje logiku pre zákazníkov
@@ -59,4 +61,42 @@ public class CustomerService {
         logger.info("Nový zákazník bol úspešne vytvorený: {}", savedCustomer);
         return savedCustomer; // Vráti zákazníka s novými dátami
     }
+
+    public boolean updateCustomerProfile(Integer id, EditProfileRequest editProfileRequest) {
+        Customer customer = repository.findById(id).orElse(null);
+
+        if (customer != null) {
+            // Update customer fields
+            customer.setName(editProfileRequest.getName());
+            customer.setSurname(editProfileRequest.getSurname());
+            customer.setCity(editProfileRequest.getCity());
+            customer.setTelephone(editProfileRequest.getTelephone());
+
+            // Convert birthdate from String to LocalDate if not null
+            if (editProfileRequest.getBirthdate() != null) {
+                // Define the formatter to match 'dd.MM.yyyy' format
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+                LocalDate birthdate = LocalDate.parse(editProfileRequest.getBirthdate(), formatter);
+                customer.setBirthdate(birthdate); // Set the converted birthdate
+            }
+
+            customer.setEmail(editProfileRequest.getEmail());
+
+            // If password is provided, encode it and update it
+            if (editProfileRequest.getPassword() != null && !editProfileRequest.getPassword().isEmpty()) {
+                customer.setPassword(passwordEncoder.encode(editProfileRequest.getPassword()));
+            }
+
+            // Uloženie aktualizovaných údajov
+            repository.save(customer);
+
+            // Logovanie po zmene
+            logger.info("Nové údaje zákazníka po aktualizácii: {}", customer);
+
+            return true;
+        }
+        return false;
+    }
+
+
 }
