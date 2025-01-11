@@ -1,6 +1,8 @@
 package com.example.tbd.vehicle;
 
+import com.example.tbd.Products.ProductService;
 import com.example.tbd.customer.CustomerRepository;  // Import pre CustomerRepository, ktoré sa používa na kontrolu existencie zákazníka
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,11 @@ public class VehicleController {
 
     @Autowired
     private CustomerRepository customerRepository;  // Injektuje CustomerRepository pre kontrolu existencie zákazníka
+    private VehicleService vehicleService;
+    @Autowired
+    public VehicleController(VehicleService vehicleService) {
+        this.vehicleService = vehicleService;
+    }
 
     // Endpoint pre pridanie nového vozidla
     @PostMapping("/add")
@@ -96,6 +103,12 @@ public class VehicleController {
         }
     }
 
+    @GetMapping("/count")
+    @Operation(summary = "Počet vozidiel", description = "Zobrazí počet vozidiel celkovo")
+    public ResponseEntity<String> countVehicle() {
+        long count = vehicleService.countVehicle();
+        return ResponseEntity.ok("Celkový registrovaných vozidiel: " + count);
+    }
 
     // Riešenie GET požiadavky na /vehicle/add (nie je podporované)
     @RequestMapping(value = "/add", method = RequestMethod.GET)

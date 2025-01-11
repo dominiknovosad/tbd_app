@@ -28,7 +28,6 @@ public class CompanyController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
-
     /**
      * Získanie údajov o spoločnosti podľa ID.
      *
@@ -41,9 +40,7 @@ public class CompanyController {
         if (companyOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Spoločnosť s poskytnutým ID neexistuje.");
         }
-
         Company company = companyOptional.get();
-
         // Prevod entity Company na CompanyOutputDTO
         CompanyOutputNoPW dto = new CompanyOutputNoPW();
         dto.setId(company.getId());
@@ -55,7 +52,6 @@ public class CompanyController {
 
         return ResponseEntity.ok(dto);
     }
-
     @Autowired
     public CompanyController(CompanyService companyService,
                              CompanyRepository companyRepository,
@@ -123,10 +119,70 @@ public class CompanyController {
         }
     }
 
+    @GetMapping("/count")
+    @Operation(summary = "Počet firiem", description = "Zobrazí počet firiem")
+    public ResponseEntity<String> countCompany() {
+        long count = companyService.countCompany();
+        return ResponseEntity.ok("Celkový počet firiem: " + count);
+    }
+    @GetMapping("/count-last-24h")
+    public ResponseEntity<String> countUsersLast24Hours() {
+        long count = companyService.countCompanyLast24Hours();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 24 hodín: " + count);
+    }
+    @GetMapping("/count-last-7d")
+    public ResponseEntity<String> countUsersLast7Days() {
+        long count = companyService.countCompanyLast7Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 7 dní: " + count);
+    }
+    @GetMapping("/count-last-30d")
+    public ResponseEntity<String> countUsersLast30Days() {
+        long count = companyService.countCompanyLast30Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 30 dní: " + count);
+    }
+    @GetMapping("/count-last-365d")
+    public ResponseEntity<String> countUsersLast365Days() {
+        long count = companyService.countCompanyLast365Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 365 dní: " + count);
+    }
     @GetMapping("/all")
-    @Operation(summary = "Získa všetky firmy", description = "Vráti zoznam všetkých firiem.")
-    public ResponseEntity<List<Company>> getAllCompanies() {
-        return ResponseEntity.ok(companyService.getAllCompany());
+    @Operation(summary = "Získa všetky firmy", description = "Vráti zoznam všetkých firiem bez hesla.")
+    public ResponseEntity<List<CompanyOutputNoPW>> getAllCompanies() {
+        List<CompanyOutputNoPW> companies = companyService.getAllCompany();
+        if (companies.isEmpty()) {
+            return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
+        }
+        return ResponseEntity.ok(companies);
+    }
+
+    @GetMapping("/byemail")
+    @Operation(summary = "Zobrazí firmu podľa emailu", description = "Zobrazí firmu podľa emailu.")
+    public ResponseEntity<List<CompanyOutputNoPW>> getByEmail(@RequestParam String email) {
+        List<CompanyOutputNoPW> companies = companyService.getByEmail(email);
+        if (companies.isEmpty()) {
+            return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
+        }
+        return ResponseEntity.ok(companies); // 200 OK, vráti zoznam firiem
+    }
+
+    @GetMapping("/bycompanyname")
+    @Operation(summary = "Zobrazí firmy podľa názvu", description = "Zobrazí firmy podľa názvu.")
+    public ResponseEntity<List<CompanyOutputNoPW>> getByCompanyName(@RequestParam String companyName) {
+        List<CompanyOutputNoPW> companies = companyService.getByCompanyName(companyName);
+        if (companies.isEmpty()) {
+            return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
+        }
+        return ResponseEntity.ok(companies); // 200 OK, vráti zoznam firiem
+    }
+
+    @GetMapping("/byico")
+    @Operation(summary = "Zobrazí firmu podľa Ičo", description = "Zobrazí firmu podľa Ičo.")
+    public ResponseEntity<List<CompanyOutputNoPW>> getCompanyByIco(@RequestParam Integer ico) {
+        List<CompanyOutputNoPW> companies = companyService.getCompanyByIco(ico);
+        if (companies.isEmpty()) {
+            return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
+        }
+        return ResponseEntity.ok(companies); // 200 OK, vráti zoznam firiem
     }
 
     @PostMapping("/register")

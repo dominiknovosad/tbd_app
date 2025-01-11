@@ -21,15 +21,15 @@ import java.time.ZoneId; // Import pre časovú zónu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 @RestController // Označuje triedu ako REST kontrolér
 @RequestMapping("/customer") // Definuje základnú URL pre všetky endpointy v tejto triede
 @Tag(name = "Customer Controller", description = "API pre správu zákazníkov a autentifikáciu") // OpenAPI anotácia pre generovanie dokumentácie
 public class CustomerController {
 
-    private final CustomerService service; // Služba na spracovanie logiky pre zákazníkov
+    private final CustomerService customerService; // Služba na spracovanie logiky pre zákazníkov
     private final CustomerRepository repository; // Repository pre komunikáciu s databázou
     private final AuthenticationManager authenticationManager; // Manažér autentifikácie na autentifikovanie používateľov
-
     private final Key secretKey; // Kľúč pre šifrovanie JWT tokenu
 
     // Konštruktor triedy, injektuje závislosti
@@ -39,7 +39,7 @@ public class CustomerController {
             AuthenticationManager authenticationManager,
             CustomerRepository repository,
             @Value("${jwt.secret}") String jwtSecret) {
-        this.service = service;
+        this.customerService = service;
         this.authenticationManager = authenticationManager;
         this.repository = repository;
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Inicializuje kľúč pre generovanie tokenu
@@ -47,14 +47,10 @@ public class CustomerController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
     @Autowired
     private JwtTokenUtil jwtTokenUtil;  // Injektovanie JwtTokenUtil
-
     @Autowired
-    private CompanyRepository companyRepository;  // Injektovanie repository pre firmy
-    @Autowired
-    private CustomerService customerService;
+    private CompanyRepository companyRepository;
 
     // Pomocná metóda na konverziu LocalDate na java.util.Date
     public static Date convertToDate(LocalDate localDate) {
@@ -153,7 +149,7 @@ public class CustomerController {
             }
 
             // Uloženie zákazníka do systému
-            Customer savedCustomer = service.createCustomer(customer);
+            Customer savedCustomer = customerService.createCustomer(customer);
             System.out.println("DEBUG: Customer successfully registered with ID: " + savedCustomer.getId());
 
             return ResponseEntity.ok(savedCustomer); // Vráti uloženého zákazníka
@@ -169,7 +165,7 @@ public class CustomerController {
     @Operation(summary = "Získa zákazníka podľa ID", description = "Vráti detail zákazníka na základe jeho ID.")
     public ResponseEntity<Customer> getCustomer(@PathVariable("id") Integer id) {
         System.out.println("DEBUG: Načítavanie zákazníka s ID: " + id);
-        return ResponseEntity.ok(service.getCustomerById(id)); // Vráti zákazníka podľa ID
+        return ResponseEntity.ok(customerService.getCustomerById(id)); // Vráti zákazníka podľa ID
     }
 
     // Endpoint na získanie všetkých zákazníkov
@@ -177,7 +173,7 @@ public class CustomerController {
     @Operation(summary = "Získa všetkých zákazníkov", description = "Vráti zoznam všetkých zákazníkov.")
     public ResponseEntity<List<Customer>> getAllCustomers() {
         System.out.println("DEBUG: Načítavanie všetkých zákazníkov");
-        return ResponseEntity.ok(service.getAll()); // Vráti zoznam všetkých zákazníkov
+        return ResponseEntity.ok(customerService.getAll()); // Vráti zoznam všetkých zákazníkov
     }
 
     @PutMapping("/editprofile/{id}")
@@ -209,4 +205,32 @@ public class CustomerController {
             return customerId;
         }
     }
+
+    @GetMapping("/count")
+    @Operation(summary = "Počet užívateľov s role_id = 1", description = "Zobrazí počet zákazníkov, ktorí majú role_id = 1.")
+    public ResponseEntity<String> countCustomersWithRoleUser() {
+        long count = customerService.countCustomersWithRoleUser();
+        return ResponseEntity.ok("Celkový počet uživateľov: " + count);
+    }
+    @GetMapping("/count-last-24h")
+    public ResponseEntity<String> countUsersLast24Hours() {
+        long count = customerService.countUsersLast24Hours();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 24 hodín: " + count);
+    }
+    @GetMapping("/count-last-7d")
+    public ResponseEntity<String> countUsersLast7Days() {
+        long count = customerService.countUsersLast7Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 7 dní: " + count);
+    }
+    @GetMapping("/count-last-30d")
+    public ResponseEntity<String> countUsersLast30Days() {
+        long count = customerService.countUsersLast30Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 30 dní: " + count);
+    }
+    @GetMapping("/count-last-365d")
+    public ResponseEntity<String> countUsersLast365Days() {
+        long count = customerService.countUsersLast365Days();
+        return ResponseEntity.ok("Počet zákazníkov za posledných 365 dní: " + count);
+    }
+
 }

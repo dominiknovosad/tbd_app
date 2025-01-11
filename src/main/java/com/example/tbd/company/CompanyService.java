@@ -8,19 +8,40 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import pre šifrovanie hesiel
 import org.springframework.stereotype.Service; // Anotácia pre označenie triedy ako Spring služby
 
+import java.time.LocalDateTime;
 import java.util.List; // Import pre prácu so zoznamami
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service // Anotácia označujúca triedu ako Spring službu, ktorú je možné injektovať do iných komponentov
 public class CompanyService {
 
-    private final CompanyRepository repository; // Repository pre prístup k databáze firiem
+    private final CompanyRepository companyRepository; // Repository pre prístup k databáze firiem
     private final PasswordEncoder passwordEncoder; // PasswordEncoder na šifrovanie hesiel
 
     private static final Logger logger = LoggerFactory.getLogger(CompanyService.class); // Logger na logovanie informácií, chýb a varovaní
-
+    public long countCompany() {
+        return companyRepository.countCompany();
+    }
+    public long countCompanyLast24Hours() {
+        LocalDateTime last24Hours = LocalDateTime.now().minusHours(24);
+        return companyRepository.countCompanyFrom(last24Hours);
+    }
+    public long countCompanyLast7Days() {
+        LocalDateTime last7Days = LocalDateTime.now().minusDays(7);
+        return companyRepository.countCompanyFrom(last7Days);
+    }
+    public long countCompanyLast30Days() {
+        LocalDateTime last30Days = LocalDateTime.now().minusDays(30);
+        return companyRepository.countCompanyFrom(last30Days);
+    }
+    public long countCompanyLast365Days() {
+        LocalDateTime last365Days = LocalDateTime.now().minusDays(365);
+        return companyRepository.countCompanyFrom(last365Days);
+    }
     @Autowired // Automatické injektovanie závislostí do konštruktora
     public CompanyService(CompanyRepository repository, PasswordEncoder passwordEncoder) {
-        this.repository = repository; // Inicializácia repository pre prístup k dátam
+        this.companyRepository = repository; // Inicializácia repository pre prístup k dátam
         this.passwordEncoder = passwordEncoder; // Inicializácia passwordEncoder pre šifrovanie hesiel
     }
 
@@ -32,43 +53,98 @@ public class CompanyService {
         company.setPassword(encodedPassword); // Nastavenie šifrovaného hesla do objektu
 
         // Uloženie spoločnosti do databázy
-        Company savedCompany = repository.save(company);
+        Company savedCompany = companyRepository.save(company);
         logger.info("Nová spoločnosť bola úspešne vytvorená: {}", savedCompany); // Logovanie úspešného vytvorenia spoločnosti
 
         return savedCompany; // Vrátenie uloženého objektu spoločnosti
     }
 
-    // Metóda na získanie spoločnosti podľa ID
-    public Company getCompanyById(Integer id) {
-        // Vylepšené: Pri neexistujúcej firme vyhodiť výnimku s popisom chyby
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Firma s ID " + id + " neexistuje"));
+    // Metóda na získanie všetkých firiem
+    public List<CompanyOutputNoPW> getAllCompany() {
+        logger.info("Načítavam všetky firmy:");
+        List<Company> companies = companyRepository.findAll(); // Načítanie všetkých spoločností
+        return companies.stream()
+                .map(company -> {
+                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    output.setId(company.getId());
+                    output.setCompanyName(company.getCompanyName());
+                    output.setIco(company.getIco());
+                    output.setEmail(company.getEmail());
+                    output.setTelephone(company.getTelephone());
+                    output.setAddress(company.getAddress());
+                    return output;
+                })
+                .collect(Collectors.toList());
     }
 
-    // Metóda na získanie všetkých firiem
-    public List<Company> getAllCompany() {
-        logger.info("Načítavam všetky firmy"); // Logovanie pred načítaním všetkých firiem
-        return repository.findAll(); // Vrátenie zoznamu všetkých firiem
+    public List<CompanyOutputNoPW> getByEmail(String email) {
+        logger.info("Načítavam firmy s e-mailom: {}", email); // Logovanie pre načítanie firiem podľa e-mailu
+        List<Company> companies = companyRepository.findByEmail(email);
+        if (companies.isEmpty()) {
+            logger.warn("Nebola nájdená žiadna firma s e-mailom: {}", email);
+        } else {
+            logger.info("Nájdené firmy: {}", companies);
+        }
+        return companies.stream()
+                .map(company -> {
+                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    output.setId(company.getId());
+                    output.setCompanyName(company.getCompanyName());
+                    output.setIco(company.getIco());
+                    output.setEmail(company.getEmail());
+                    output.setTelephone(company.getTelephone());
+                    output.setAddress(company.getAddress());
+                    return output;
+                })
+                .collect(Collectors.toList());
     }
 
     // Metóda na získanie všetkých firiem podľa názvu
-    public List<Company> findAllByCompanyName(String companyName) {
+    public List<CompanyOutputNoPW> getByCompanyName(String companyName) {
         logger.info("Načítavam firmy podľa názvu: {}", companyName); // Logovanie pred načítaním firiem podľa názvu
-        return repository.findAllByCompanyName(companyName); // Vrátenie zoznamu firiem s daným názvom
-    }
-
-    // Metóda na získanie firiem podľa IČO
-    public List<Company> findAllByIco(Integer ico) {
-        if (ico == null) { // Kontrola platnosti IČO, nemôže byť null
-            logger.warn("IČO je neplatné (null)"); // Logovanie varovania pri neplatnom IČO
-            throw new IllegalArgumentException("IČO nemôže byť null"); // Vyhodenie výnimky s chybovou správou
+        List<Company> companies = companyRepository.findByCompanyName(companyName);
+        if (companies.isEmpty()) {
+            logger.warn("Nebola nájdená žiadna firma s názovom: {}", companyName);
+        } else {
+            logger.info("Nájdené firmy: {}", companies);
         }
-        logger.info("Načítavam firmy podľa IČO: {}", ico); // Logovanie pred načítaním firiem podľa IČO
-        return repository.findAllByIco(ico); // Vrátenie zoznamu firiem s daným IČO
+        return companies.stream()
+                .map(company -> {
+                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    output.setId(company.getId());
+                    output.setCompanyName(company.getCompanyName());
+                    output.setIco(company.getIco());
+                    output.setEmail(company.getEmail());
+                    output.setTelephone(company.getTelephone());
+                    output.setAddress(company.getAddress());
+                    return output;
+                })
+                .collect(Collectors.toList());
     }
 
     // Metóda na získanie spoločnosti podľa IČO
-    public Company getCompanyByIco(Integer ico) {
-        return repository.findByIco(ico).orElseThrow(() -> new RuntimeException("Firma s IČO " + ico + " nenájdená.")); // Nájde firmu podľa IČO alebo vyhodí výnimku ak neexistuje
+    public List<CompanyOutputNoPW> getCompanyByIco(Integer ico) {
+        logger.info("Načítavam firmy podľa IČO: {}", ico); // Logovanie pred načítaním firiem
+        List<Company> companies = companyRepository.findAllByIco(ico);
+        if (companies.isEmpty()) {
+            logger.warn("Nebola nájdená žiadna firma s IČO: {}", ico);
+        } else {
+            for (Company company : companies) {
+                logger.info("Nájdená firma: IČO: {}, Názov: {}", company.getIco(), company.getCompanyName());
+            }
+        }
+        return companies.stream()
+                .map(company -> {
+                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    output.setId(company.getId());
+                    output.setCompanyName(company.getCompanyName());
+                    output.setIco(company.getIco());
+                    output.setEmail(company.getEmail());
+                    output.setTelephone(company.getTelephone());
+                    output.setAddress(company.getAddress());
+                    return output;
+                })
+                .collect(Collectors.toList());
     }
 
 

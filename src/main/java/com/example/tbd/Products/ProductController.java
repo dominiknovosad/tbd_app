@@ -3,6 +3,7 @@ package com.example.tbd.Products;
 import com.example.tbd.company.CompanyRepository;
 import com.example.tbd.customer.CustomerRepository;
 import com.example.tbd.vehicle.Vehicle;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +25,13 @@ public class ProductController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
 
-    @Autowired
     private ProductRepository productRepository;
-    @Autowired
     private CompanyRepository companyRepository;
+    private ProductService productService;
+    @Autowired
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     // Endpoint na získanie všetkých služieb
     @GetMapping("/showall")
@@ -48,6 +52,13 @@ public class ProductController {
             return ResponseEntity.noContent().build(); // Vráti 204 No Content, ak žiadne služby neexistujú pre danú firmu
         }
         return ResponseEntity.ok(products); // Vráti zoznam služieb (200 OK)
+    }
+
+    @GetMapping("/count")
+    @Operation(summary = "Počet služieb", description = "Zobrazí počet služieb celkovo")
+    public ResponseEntity<String> countProduct() {
+        long count = productService.countProduct();
+        return ResponseEntity.ok("Celkový počet služieb: " + count);
     }
 
     // Endpoint na označenie služby ako vymazanej
@@ -127,4 +138,5 @@ public class ProductController {
             return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");  // Vráti internú chybu servera
         }
     }
+
 }

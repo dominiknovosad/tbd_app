@@ -56,6 +56,11 @@ public class Customer {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") // Formát pre zobrazenie dátumu a času
     private LocalDateTime createdAt;
 
+
+    @Column(name = "role_id", nullable = false) // Názov stĺpca pre heslo zákazníka
+    @NotNull
+    private Integer roleId = 1;
+
     // Override metódy toString pre ľahšie zobrazenie objektu Customer
     @Override
     public String toString() {
@@ -145,5 +150,11 @@ public class Customer {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+   public Integer getRoleId() {
+        return roleId;
+    }
+    public void setRoleId(Integer roleId) {
+        this.roleId = roleId;
     }
 }
