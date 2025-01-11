@@ -4,6 +4,7 @@ import com.example.tbd.customer.CustomerRepository; // Import repository pre pr�
 import org.slf4j.Logger; // Import loggera pre logovanie informácií
 import org.slf4j.LoggerFactory; // Import na vytvorenie inštancie loggera
 import org.springframework.beans.factory.annotation.Autowired; // Import pre automatické injektovanie závislostí
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import pre šifrovanie hesiel
 import org.springframework.stereotype.Service; // Anotácia pre označenie triedy ako Spring služby
 
@@ -25,6 +26,7 @@ public class CompanyService {
 
     // Metóda na vytvorenie novej spoločnosti
     public Company createCompany(Company company) {
+
         // Šifrovanie hesla pred uložením do databázy
         String encodedPassword = passwordEncoder.encode(company.getPassword());
         company.setPassword(encodedPassword); // Nastavenie šifrovaného hesla do objektu
@@ -68,4 +70,6 @@ public class CompanyService {
     public Company getCompanyByIco(Integer ico) {
         return repository.findByIco(ico).orElseThrow(() -> new RuntimeException("Firma s IČO " + ico + " nenájdená.")); // Nájde firmu podľa IČO alebo vyhodí výnimku ak neexistuje
     }
+
+
 }

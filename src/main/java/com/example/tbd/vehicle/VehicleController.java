@@ -62,8 +62,8 @@ public class VehicleController {
         }
 
         try {
-            // Kontrola duplicity SPZ
-            if (vehicleRepository.existsByPlateNo(vehicle.getPlateNo())) {
+            // Kontrola duplicity SPZ iba pre záznamy, kde deleted = 'N'
+            if (vehicleRepository.existsByPlateNoAndDeleted(vehicle.getPlateNo(), "N")) {
                 logger.warn("Vozidlo s SPZ {} už existuje.", vehicle.getPlateNo());
                 return ResponseEntity.badRequest().body("Vozidlo so zadanou SPZ už existuje.");
             }
@@ -76,6 +76,7 @@ public class VehicleController {
             newvehicle.setRegisteredAt(vehicle.getRegisteredAt());  // Nastavenie správneho dátumu registrácie
             newvehicle.setVin(vehicle.getVin());
             newvehicle.setPlateNo(vehicle.getPlateNo());
+            newvehicle.setDeleted("N");  // Nastavenie defaultnej hodnoty pre deleted
             newvehicle.setCreatedAt(LocalDateTime.now());  // Uloženie aktuálneho dátumu a času ako LocalDateTime
 
             // Uloženie vozidla do databázy
@@ -94,6 +95,7 @@ public class VehicleController {
             return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");  // Vráti internú chybu servera
         }
     }
+
 
     // Riešenie GET požiadavky na /vehicle/add (nie je podporované)
     @RequestMapping(value = "/add", method = RequestMethod.GET)
@@ -133,13 +135,17 @@ public class VehicleController {
     }
 
     // Endpoint na získanie vozidiel podľa ID zákazníka
-    @GetMapping("/customerid/{customerId}")  // Použitie "/{customerId}" pre získanie vozidiel podľa ID zákazníka
+    @GetMapping("/customerid/{customerId}")
     public ResponseEntity<List<Vehicle>> getVehiclesByCustomerId(@PathVariable Integer customerId) {
-        List<Vehicle> vehicles = vehicleRepository.findByCustomerId(customerId);
+        // Načítanie vozidiel, kde deleted = 'N'
+        List<Vehicle> vehicles = vehicleRepository.findByCustomerIdAndDeleted(customerId, "N");
+        logger.debug("Zobrazené aktívne vozidlá pre customerId {}: {}", customerId, vehicles);
+
         if (vehicles.isEmpty()) {
-            return ResponseEntity.noContent().build();  // Vráti 204 No Content, ak žiadne vozidlo pre zákazníka neexistuje
+            return ResponseEntity.noContent().build(); // 204 No Content, ak žiadne vozidlá neexistujú
         }
-        return ResponseEntity.ok(vehicles);  // Vráti zoznam vozidiel (200 OK)
+
+        return ResponseEntity.ok(vehicles); // 200 OK, vráti zoznam vozidiel
     }
 
     @PutMapping("/update")

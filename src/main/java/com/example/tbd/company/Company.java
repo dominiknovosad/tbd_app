@@ -1,6 +1,7 @@
 package com.example.tbd.company;
 
 import com.fasterxml.jackson.annotation.JsonFormat; // Import pre formátovanie dátumu a času pri serializácii do JSON
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*; // Import pre JPA anotácie (Entity, Table, Column, Id a pod.)
 import jakarta.validation.constraints.Digits; // Import pre validáciu číslic (kontrola počtu číslic)
 import jakarta.validation.constraints.NotNull; // Import pre validáciu, aby hodnota nebola null (prázdna)
@@ -41,6 +42,7 @@ public class Company {
     @NotNull(message = "Heslo nesmie byť prázdne") // Validácia, aby heslo nebolo prázdne
     private String password; // Heslo spoločnosti
 
+    @JsonIgnore
     @Column(name = "created_at", updatable = false) // Určuje názov stĺpca pre dátum a čas vytvorenia záznamu
     @CreationTimestamp // Automaticky nastaví čas vytvorenia záznamu pri jeho uložení do databázy
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") // Formátovanie dátumu a času do formátu "yyyy-MM-dd HH:mm:ss" pri serializácii do JSON
@@ -120,5 +122,14 @@ public class Company {
                 ", address='" + address + '\'' +
                 ", createdAt=" + createdAt +
                 '}'; // Vypíše všetky informácie o spoločnosti
+    }
+    public class CompanyOutputDTO {
+        private Integer id;
+        private String companyName;
+        private Integer ico;
+        private String email;
+        private String telephone;
+        private String address;
+
     }
 }

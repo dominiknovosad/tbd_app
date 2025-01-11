@@ -4,16 +4,17 @@ import com.example.tbd.JwtTokenUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/company")
@@ -27,6 +28,33 @@ public class CompanyController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
+
+    /**
+     * Získanie údajov o spoločnosti podľa ID.
+     *
+     * @param id ID spoločnosti
+     * @return ResponseEntity obsahujúca údaje spoločnosti alebo chybovú správu
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getCompanyById(@PathVariable Integer id) {
+        Optional<Company> companyOptional = companyRepository.findById(id);
+        if (companyOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Spoločnosť s poskytnutým ID neexistuje.");
+        }
+
+        Company company = companyOptional.get();
+
+        // Prevod entity Company na CompanyOutputDTO
+        CompanyOutputNoPW dto = new CompanyOutputNoPW();
+        dto.setId(company.getId());
+        dto.setCompanyName(company.getCompanyName());
+        dto.setIco(company.getIco());
+        dto.setEmail(company.getEmail());
+        dto.setTelephone(company.getTelephone());
+        dto.setAddress(company.getAddress());
+
+        return ResponseEntity.ok(dto);
+    }
 
     @Autowired
     public CompanyController(CompanyService companyService,
@@ -95,12 +123,6 @@ public class CompanyController {
         }
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Získa firmu podľa ID", description = "Vráti detail firmy na základe jej ID.")
-    public ResponseEntity<Company> getCompany(@PathVariable("id") Integer id) {
-        return ResponseEntity.ok(companyService.getCompanyById(id));
-    }
-
     @GetMapping("/all")
     @Operation(summary = "Získa všetky firmy", description = "Vráti zoznam všetkých firiem.")
     public ResponseEntity<List<Company>> getAllCompanies() {
@@ -114,5 +136,54 @@ public class CompanyController {
         Company savedCompany = companyService.createCompany(company);
         logger.info("DEBUG: Firma úspešne registrovaná s ID: {}", savedCompany.getId());
         return ResponseEntity.ok(savedCompany);
+    }
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateCompany(@PathVariable Integer id, @RequestBody Company updatedCompany) {
+        logger.debug("Prijatý požiadavka na aktualizáciu údajov spoločnosti s ID {}", id);
+
+        // Validácia ID
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().body("Neplatné ID spoločnosti!");
+        }
+
+        // Kontrola, či spoločnosť s daným ID existuje
+        Optional<Company> existingCompanyOptional = companyRepository.findById(id);
+        if (existingCompanyOptional.isEmpty()) {
+            logger.warn("Spoločnosť s ID {} neexistuje.", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Spoločnosť s poskytnutým ID neexistuje.");
+        }
+
+        try {
+            Company existingCompany = existingCompanyOptional.get();
+
+            // Aktualizácia údajov spoločnosti
+            if (updatedCompany.getCompanyName() != null && !updatedCompany.getCompanyName().isEmpty()) {
+                existingCompany.setCompanyName(updatedCompany.getCompanyName());
+            }
+            if (updatedCompany.getIco() != null) {
+                existingCompany.setIco(updatedCompany.getIco());
+            }
+            if (updatedCompany.getEmail() != null && !updatedCompany.getEmail().isEmpty()) {
+                existingCompany.setEmail(updatedCompany.getEmail());
+            }
+            if (updatedCompany.getTelephone() != null && !updatedCompany.getTelephone().isEmpty()) {
+                existingCompany.setTelephone(updatedCompany.getTelephone());
+            }
+            if (updatedCompany.getAddress() != null && !updatedCompany.getAddress().isEmpty()) {
+                existingCompany.setAddress(updatedCompany.getAddress());
+            }
+            if (updatedCompany.getPassword() != null && !updatedCompany.getPassword().isEmpty()) {
+                existingCompany.setPassword(updatedCompany.getPassword());
+            }
+
+            // Uloženie zmien do databázy
+            companyRepository.save(existingCompany);
+
+            logger.info("Údaje spoločnosti s ID {} boli úspešne aktualizované.", id);
+            return ResponseEntity.ok("Údaje spoločnosti boli úspešne aktualizované.");
+        } catch (Exception e) {
+            logger.error("Chyba pri aktualizácii spoločnosti s ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");
+        }
     }
 }

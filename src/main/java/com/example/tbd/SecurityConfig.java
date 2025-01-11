@@ -49,7 +49,13 @@ public class SecurityConfig {
                         "/vehicle/vin/{vin}",
                         "/vehicle/customerid/{customerId}",
                         "/vehicle/update",
-                        "/vehicle/delupdate/{id}"
+                        "/vehicle/delupdate/{id}",
+                        "/company/update/{id}",
+                        "/product/add",
+                        "/product/companyid/{companyId}",
+                        "/product/delupdate/{id}",
+                        "product/showall",
+                        "/product/"
                 ).permitAll()  // Povolený prístup bez autentifikácie
                 .anyRequest().authenticated()  // Ostatné požiadavky vyžadujú autentifikáciu
                 .and()

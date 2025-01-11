@@ -10,4 +10,6 @@ public interface CompanyRepository extends JpaRepository<Company, Integer> {
     public List<Company> findAllByCompanyName(String company_name);
     public List<Company> findAllByIco(Integer ico);
     Optional<Company> findByIco(Integer ico);
+
+    Optional<Company> findById(Integer id);
 }

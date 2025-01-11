@@ -9,7 +9,10 @@ import java.time.LocalDate;  // Import pre typ LocalDate, ktorý obsahuje iba d�
 import java.time.LocalDateTime;  // Import pre typ LocalDateTime, ktorý obsahuje dátum aj čas
 
 @Entity  // Anotácia pre označenie triedy ako entitu, ktorá bude mapovaná na databázovú tabuľku
-@Table(name = "vehicle")  // Názov tabuľky v databáze, na ktorú bude entita mapovaná
+@Table(
+        name = "vehicle", // Názov tabuľky v databáze, na ktorú bude entita mapovaná
+        uniqueConstraints = @UniqueConstraint(columnNames = {"plate_no", "deleted"})
+        )
 public class Vehicle {
 
     @Id  // Označuje primárny kľúč
