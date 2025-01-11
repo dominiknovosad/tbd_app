@@ -10,7 +10,7 @@ public class VehicleService {
     public VehicleService(VehicleRepository vehicleRepository) {
         this.vehicleRepository = vehicleRepository;
     }
-    public long countVehicle() {
-        return vehicleRepository.count();
+    public long countVehicles() {
+        return vehicleRepository.countVehicles();
     }
 }

@@ -53,12 +53,11 @@ public class ProductController {
         }
         return ResponseEntity.ok(products); // Vráti zoznam služieb (200 OK)
     }
-
     @GetMapping("/count")
-    @Operation(summary = "Počet služieb", description = "Zobrazí počet služieb celkovo")
-    public ResponseEntity<String> countProduct() {
-        long count = productService.countProduct();
-        return ResponseEntity.ok("Celkový počet služieb: " + count);
+    @Operation(summary = "Počet produktov", description = "Zobrazí počet produktov celkovo")
+    public ResponseEntity<String> countProducts() {
+        long count = productService.countProducts();
+        return ResponseEntity.ok("Celkový počet produktov: " + count);
     }
 
     // Endpoint na označenie služby ako vymazanej

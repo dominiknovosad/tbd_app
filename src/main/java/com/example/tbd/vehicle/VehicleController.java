@@ -105,9 +105,9 @@ public class VehicleController {
 
     @GetMapping("/count")
     @Operation(summary = "Počet vozidiel", description = "Zobrazí počet vozidiel celkovo")
-    public ResponseEntity<String> countVehicle() {
-        long count = vehicleService.countVehicle();
-        return ResponseEntity.ok("Celkový registrovaných vozidiel: " + count);
+    public ResponseEntity<String> countVehicles() {
+        long count = vehicleService.countVehicles();
+        return ResponseEntity.ok("Celkový počet registrovaných vozidiel: " + count);
     }
 
     // Riešenie GET požiadavky na /vehicle/add (nie je podporované)

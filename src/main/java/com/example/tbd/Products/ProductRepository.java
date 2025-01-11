@@ -14,7 +14,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findByCompanyId(Integer companyId);
     List<Product> findAll();
     Optional<Product> findById(Integer id);
-    @Query("SELECT COUNT(p) FROM Product p WHERE p.deleted = 'N'")
-    @Modifying(clearAutomatically = true)
-    long countProduct();
+    @Query(value = "SELECT COUNT(*) FROM Product WHERE deleted = 'N'", nativeQuery = true)
+    long countProducts();
 }

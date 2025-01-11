@@ -12,7 +12,7 @@ public class ProductService {
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
-    public long countProduct() {
-        return productRepository.count();
+    public long countProducts() {
+        return productRepository.countProducts();
     }
 }

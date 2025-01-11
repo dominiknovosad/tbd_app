@@ -19,8 +19,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
     boolean existsByVin(String vin);
     List<Vehicle> findByCustomerIdAndDeleted(Integer customerId, String deleted);
     boolean existsByPlateNoAndDeleted(String plateNo, String deleted);
-    @Query("SELECT COUNT(v) FROM Vehicle v WHERE v.id is not null and v.deleted = 'N'")
-    @Modifying(clearAutomatically = true)
-    long countVehicle();
+    @Query(value = "SELECT COUNT(*) FROM vehicle WHERE deleted = 'N'", nativeQuery = true)
+    long countVehicles();
 
 }
