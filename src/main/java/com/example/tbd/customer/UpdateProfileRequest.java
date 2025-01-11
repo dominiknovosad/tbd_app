@@ -1,10 +1,10 @@
 package com.example.tbd.customer;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+
 import javax.validation.constraints.Size;
 
-public class EditProfileRequest {
+public class UpdateProfileRequest {
 
     @NotBlank(message = "Meno je povinné")
     private String name;

@@ -2,8 +2,6 @@ package com.example.tbd.customer;
 
 import com.example.tbd.JwtTokenUtil;
 import com.example.tbd.company.CompanyRepository;
-import com.example.tbd.customer.LoginRequest; // Import novej triedy LoginRequest
-import io.jsonwebtoken.Jwts; // Import pre JWT token
 import io.jsonwebtoken.security.Keys; // Import pre generovanie bezpečného kľúča
 import io.swagger.v3.oas.annotations.Operation; // Import pre anotácie OpenAPI
 import io.swagger.v3.oas.annotations.tags.Tag; // Import pre tagy OpenAPI
@@ -11,17 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value; // Import pre získanie hodnoty z application.properties
 import org.springframework.http.ResponseEntity; // Import pre ResponseEntity, ktorý sa používa na vytváranie odpovedí
 import org.springframework.security.authentication.AuthenticationManager; // Import pre autentifikáciu
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // Import pre autentifikáciu s používateľským menom a heslom
-import org.springframework.security.core.Authentication; // Import pre autentifikáciu
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*; // Import pre vytváranie REST API
 import com.example.tbd.company.Company; // Import pre triedu Company
 import java.security.Key; // Import pre bezpečný kľúč na šifrovanie JWT
-import java.text.SimpleDateFormat; // Import pre formátovanie dátumu
-import java.time.Instant; // Import pre získanie aktuálneho času
 import java.time.LocalDate; // Import pre dátum
-import java.time.format.DateTimeFormatter; // Import pre formátovanie dátumu
 import java.util.List; // Import pre zoznam
 import java.util.Date; // Import pre dátum
 import java.time.ZoneId; // Import pre časovú zónu
@@ -189,7 +182,7 @@ public class CustomerController {
 
     @PutMapping("/editprofile/{id}")
     public ResponseEntity<String> editProfile(@PathVariable Long id,
-                                              @RequestBody @Validated EditProfileRequest editProfileRequest) {
+                                              @RequestBody @Validated UpdateProfileRequest editProfileRequest) {
         boolean isUpdated = customerService.updateCustomerProfile(Math.toIntExact(id), editProfileRequest);
 
         if (isUpdated) {

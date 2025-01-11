@@ -1,6 +1,8 @@
 package com.example.tbd.vehicle;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +21,9 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
 
     // Find vehicles by customer ID
     List<Vehicle> findByCustomerId(Integer customerId);
+
+    boolean existsByPlateNo(String plateNo);
+
+    boolean existsByVin(String vin);
+
 }

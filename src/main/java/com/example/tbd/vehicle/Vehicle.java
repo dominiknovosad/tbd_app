@@ -37,6 +37,14 @@ public class Vehicle {
     @JsonProperty("plate_no")
     private String plateNo;
 
+    @Column(name = "deleted", nullable = false)
+    private String deleted = "N";
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+
     // Vytvorenie dátumu a času pre časovú značku "created_at", nastavuje sa automaticky
     @Column(name = "created_at", nullable = false, updatable = false)  // Stĺpec pre dátum a čas vytvorenia, ktorý sa neaktualizuje
     @CreationTimestamp  // Automatické nastavenie času vytvorenia
@@ -106,5 +114,9 @@ public class Vehicle {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
     }
 }

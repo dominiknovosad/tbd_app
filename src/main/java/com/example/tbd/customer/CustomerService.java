@@ -62,7 +62,7 @@ public class CustomerService {
         return savedCustomer; // Vráti zákazníka s novými dátami
     }
 
-    public boolean updateCustomerProfile(Integer id, EditProfileRequest editProfileRequest) {
+    public boolean updateCustomerProfile(Integer id, UpdateProfileRequest editProfileRequest) {
         Customer customer = repository.findById(id).orElse(null);
 
         if (customer != null) {

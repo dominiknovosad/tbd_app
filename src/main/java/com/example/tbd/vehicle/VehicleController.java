@@ -62,6 +62,12 @@ public class VehicleController {
         }
 
         try {
+            // Kontrola duplicity SPZ
+            if (vehicleRepository.existsByPlateNo(vehicle.getPlateNo())) {
+                logger.warn("Vozidlo s SPZ {} už existuje.", vehicle.getPlateNo());
+                return ResponseEntity.badRequest().body("Vozidlo so zadanou SPZ už existuje.");
+            }
+
             // Vytvorenie a uloženie nového vozidla
             Vehicle newvehicle = new Vehicle();
             newvehicle.setCustomerId(vehicle.getCustomerId());
@@ -77,7 +83,7 @@ public class VehicleController {
 
             // Logovanie úspešného pridania vozidla
             logger.info("Vozidlo úspešne pridané pre uživateľa {}: Značka: {}, Model: {}, VIN: {}, ŠPZ: {}, Dátum registrácie: {}",
-                    newvehicle.getCustomerId(),newvehicle.getBrand(), newvehicle.getModel(),
+                    newvehicle.getCustomerId(), newvehicle.getBrand(), newvehicle.getModel(),
                     newvehicle.getVin(), newvehicle.getPlateNo(),
                     newvehicle.getRegisteredAt());
 
@@ -134,5 +140,105 @@ public class VehicleController {
             return ResponseEntity.noContent().build();  // Vráti 204 No Content, ak žiadne vozidlo pre zákazníka neexistuje
         }
         return ResponseEntity.ok(vehicles);  // Vráti zoznam vozidiel (200 OK)
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<?> updateVehicle(@RequestBody Vehicle updatedVehicle) {
+        logger.debug("Prijatý požiadavka na aktualizáciu vozidla - {}", updatedVehicle);
+
+        // Validácia vstupných údajov
+        if (updatedVehicle.getId() == null || updatedVehicle.getId() <= 0) {
+            return ResponseEntity.badRequest().body("Neplatné ID vozidla!");
+        }
+
+        // Kontrola, či vozidlo s daným ID existuje
+        Optional<Vehicle> existingVehicleOptional = vehicleRepository.findById(updatedVehicle.getId());
+        if (existingVehicleOptional.isEmpty()) {
+            logger.warn("Vozidlo s ID {} neexistuje.", updatedVehicle.getId());
+            return ResponseEntity.badRequest().body("Vozidlo s poskytnutým ID neexistuje.");
+        }
+
+        Vehicle existingVehicle = existingVehicleOptional.get();
+
+        try {
+            // Aktualizácia hodnôt vozidla
+            if (updatedVehicle.getCustomerId() != null) {
+                existingVehicle.setCustomerId(updatedVehicle.getCustomerId());
+            }
+            if (updatedVehicle.getBrand() != null && !updatedVehicle.getBrand().isEmpty()) {
+                existingVehicle.setBrand(updatedVehicle.getBrand());
+            }
+            if (updatedVehicle.getModel() != null && !updatedVehicle.getModel().isEmpty()) {
+                existingVehicle.setModel(updatedVehicle.getModel());
+            }
+            if (updatedVehicle.getRegisteredAt() != null && !updatedVehicle.getRegisteredAt().isEmpty()) {
+                // Validácia formátu dátumu
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                try {
+                    LocalDate.parse(updatedVehicle.getRegisteredAt(), formatter);
+                    existingVehicle.setRegisteredAt(updatedVehicle.getRegisteredAt());
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.badRequest().body("Neplatný formát dátumu registrácie vozidla. Očakávaný formát: yyyy-MM-dd.");
+                }
+            }
+            if (updatedVehicle.getVin() != null && !updatedVehicle.getVin().isEmpty()) {
+                // Kontrola duplicity VIN
+                if (!existingVehicle.getVin().equals(updatedVehicle.getVin()) &&
+                        vehicleRepository.existsByVin(updatedVehicle.getVin())) {
+                    return ResponseEntity.badRequest().body("Vozidlo s poskytnutým VIN už existuje.");
+                }
+                existingVehicle.setVin(updatedVehicle.getVin());
+            }
+            if (updatedVehicle.getPlateNo() != null && !updatedVehicle.getPlateNo().isEmpty()) {
+                // Kontrola duplicity SPZ
+                if (!existingVehicle.getPlateNo().equals(updatedVehicle.getPlateNo()) &&
+                        vehicleRepository.existsByPlateNo(updatedVehicle.getPlateNo())) {
+                    return ResponseEntity.badRequest().body("Vozidlo so zadanou SPZ už existuje.");
+                }
+                existingVehicle.setPlateNo(updatedVehicle.getPlateNo());
+            }
+
+            // Uloženie aktualizovaného vozidla
+            vehicleRepository.save(existingVehicle);
+
+            logger.info("Vozidlo s ID {} úspešne aktualizované.", existingVehicle.getId());
+            return ResponseEntity.ok("Vozidlo úspešne aktualizované.");
+        } catch (Exception e) {
+            logger.error("Chyba pri aktualizácii vozidla: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body("Chyba pri aktualizácii vozidla!");
+        }
+    }
+
+    @PutMapping("/delupdate/{id}")
+    public ResponseEntity<?> deleteUpdateVehicle(@PathVariable Integer id) {
+        logger.debug("Prijatý požiadavka na označenie vozidla s ID {} ako vymazaného.", id);
+
+        // Validácia ID vozidla
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().body("Neplatné ID vozidla!");
+        }
+
+        // Kontrola, či vozidlo s daným ID existuje
+        Optional<Vehicle> existingVehicleOptional = vehicleRepository.findById(id);
+        if (existingVehicleOptional.isEmpty()) {
+            logger.warn("Vozidlo s ID {} neexistuje.", id);
+            return ResponseEntity.badRequest().body("Vozidlo s poskytnutým ID neexistuje.");
+        }
+
+        try {
+            Vehicle existingVehicle = existingVehicleOptional.get();
+
+            // Aktualizácia hodnoty stĺpca "deleted" na "Y"
+            existingVehicle.setDeleted("Y");
+
+            // Uloženie zmeny do databázy
+            vehicleRepository.save(existingVehicle);
+
+            logger.info("Vozidlo s ID {} bolo označené ako vymazané.", id);
+            return ResponseEntity.ok("Vozidlo bolo úspešne označené ako vymazané.");
+        } catch (Exception e) {
+            logger.error("Chyba pri označovaní vozidla s ID {} ako vymazaného: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");
+        }
     }
 }
