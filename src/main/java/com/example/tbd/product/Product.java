@@ -1,7 +1,6 @@
-package com.example.tbd.Products;
+package com.example.tbd.product;
 
 import com.fasterxml.jackson.annotation.JsonFormat;  // Import na formátovanie dátumu pre JSON
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;  // Import pre JPA anotácie
 import org.hibernate.annotations.CreationTimestamp;  // Import pre automatické nastavenie dátumu a času vytvorenia

@@ -1,6 +1,5 @@
 package com.example.tbd.vehicle;
 
-import com.example.tbd.Products.ProductRepository;
 import org.springframework.stereotype.Service;
 
 @Service

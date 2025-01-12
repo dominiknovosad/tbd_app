@@ -1,6 +1,5 @@
 package com.example.tbd.vehicle;
 
-import com.example.tbd.Products.ProductService;
 import com.example.tbd.customer.CustomerRepository;  // Import pre CustomerRepository, ktoré sa používa na kontrolu existencie zákazníka
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,8 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/vehicle")  // Definuje URL cestu pre všetky endpointy tejto triedy
@@ -40,22 +37,21 @@ public class VehicleController {
     // Endpoint pre pridanie nového vozidla
     @PostMapping("/add")
     public ResponseEntity<?> addVehicle(@RequestBody Vehicle vehicle) {
-        logger.debug("Prijatý VehicleRequest - {}", vehicle);  // Logovanie prijatého požiadavky na pridanie vozidla
+        logger.debug("Prijatý VehicleRequest - {}", vehicle); // Logovanie prijatého požiadavky na pridanie vozidla
 
-        // Validácia vstupných údajov
+        // Validácia povinných údajov
         if (vehicle.getCustomerId() == null || vehicle.getCustomerId() <= 0 ||
                 vehicle.getBrand() == null || vehicle.getBrand().isEmpty() ||
                 vehicle.getModel() == null || vehicle.getModel().isEmpty() ||
                 vehicle.getRegisteredAt() == null || vehicle.getRegisteredAt().isEmpty() ||
                 vehicle.getVin() == null || vehicle.getVin().isEmpty() ||
                 vehicle.getPlateNo() == null || vehicle.getPlateNo().isEmpty()) {
-            return ResponseEntity.badRequest().body("Neplatné údaje pre vozidlo!");  // Vráti chybu ak sú údaje neúplné
+            return ResponseEntity.badRequest().body("Neplatné údaje pre vozidlo!"); // Vráti chybu ak sú povinné údaje neúplné
         }
 
         // Kontrola, či zákazník s daným ID existuje
-        boolean customerExists = customerRepository.existsById(vehicle.getCustomerId());
-        if (!customerExists) {
-            logger.warn("Zákazník s ID {} neexistuje.", vehicle.getCustomerId());  // Logovanie, ak zákazník neexistuje
+        if (!customerRepository.existsById(vehicle.getCustomerId())) {
+            logger.warn("Zákazník s ID {} neexistuje.", vehicle.getCustomerId());
             return ResponseEntity.badRequest().body("Zákazník s poskytnutým ID neexistuje.");
         }
 
@@ -63,9 +59,29 @@ public class VehicleController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         LocalDate registeredAt;
         try {
-            registeredAt = LocalDate.parse(vehicle.getRegisteredAt(), formatter);  // Pokus o parsing dátumu
+            registeredAt = LocalDate.parse(vehicle.getRegisteredAt(), formatter);
         } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body("Neplatný formát dátumu registrácie vozidla. Očakávaný formát: DD.MM.YYYY.");  // Chyba pri neplatnom formáte dátumu
+            return ResponseEntity.badRequest().body("Neplatný formát dátumu registrácie vozidla. Očakávaný formát: DD.MM.YYYY.");
+        }
+
+        // Validácia voliteľných údajov
+        if (vehicle.getFuel() != null && vehicle.getFuel().isEmpty()) {
+            return ResponseEntity.badRequest().body("Typ paliva nemôže byť prázdny, ak je uvedený!");
+        }
+        if (vehicle.getColor() != null && vehicle.getColor().isEmpty()) {
+            return ResponseEntity.badRequest().body("Farba nemôže byť prázdna, ak je uvedená!");
+        }
+        if (vehicle.getMileage() != null && vehicle.getMileage() < 0) {
+            return ResponseEntity.badRequest().body("Najazdené kilometre nemôžu byť záporné!");
+        }
+        if (vehicle.getTireSize() != null && vehicle.getTireSize().isEmpty()) {
+            return ResponseEntity.badRequest().body("Rozmer pneumatík nemôže byť prázdny, ak je uvedený!");
+        }
+        if (vehicle.getLastServiced() != null && vehicle.getLastServiced().isEmpty()) {
+            return ResponseEntity.badRequest().body("Dátum posledného servisu nemôže byť prázdny, ak je uvedený!");
+        }
+        if (vehicle.getTransmissionType() != null && vehicle.getTransmissionType().isEmpty()) {
+            return ResponseEntity.badRequest().body("Typ prevodovky nemôže byť prázdny, ak je uvedený!");
         }
 
         try {
@@ -74,34 +90,43 @@ public class VehicleController {
                 logger.warn("Vozidlo s SPZ {} už existuje.", vehicle.getPlateNo());
                 return ResponseEntity.badRequest().body("Vozidlo so zadanou SPZ už existuje.");
             }
+            if (vehicleRepository.existsByVin(vehicle.getVin())) {
+                logger.warn("Vozidlo s VIN {} už existuje.", vehicle.getVin());
+                return ResponseEntity.badRequest().body("Vozidlo so zadaným VIN už existuje.");
+            }
 
             // Vytvorenie a uloženie nového vozidla
-            Vehicle newvehicle = new Vehicle();
-            newvehicle.setCustomerId(vehicle.getCustomerId());
-            newvehicle.setBrand(vehicle.getBrand());
-            newvehicle.setModel(vehicle.getModel());
-            newvehicle.setRegisteredAt(vehicle.getRegisteredAt());  // Nastavenie správneho dátumu registrácie
-            newvehicle.setVin(vehicle.getVin());
-            newvehicle.setPlateNo(vehicle.getPlateNo());
-            newvehicle.setDeleted("N");  // Nastavenie defaultnej hodnoty pre deleted
-            newvehicle.setCreatedAt(LocalDateTime.now());  // Uloženie aktuálneho dátumu a času ako LocalDateTime
+            Vehicle newVehicle = new Vehicle();
+            newVehicle.setCustomerId(vehicle.getCustomerId());
+            newVehicle.setBrand(vehicle.getBrand());
+            newVehicle.setModel(vehicle.getModel());
+            newVehicle.setRegisteredAt(vehicle.getRegisteredAt());
+            newVehicle.setVin(vehicle.getVin());
+            newVehicle.setPlateNo(vehicle.getPlateNo());
+            newVehicle.setFuel(vehicle.getFuel());
+            newVehicle.setColor(vehicle.getColor());
+            newVehicle.setMileage(vehicle.getMileage());
+            newVehicle.setTireSize(vehicle.getTireSize());
+            newVehicle.setLastServiced(vehicle.getLastServiced());
+            newVehicle.setTransmissionType(vehicle.getTransmissionType());
+            newVehicle.setDeleted("N"); // Nastavenie defaultnej hodnoty pre deleted
+            newVehicle.setCreatedAt(LocalDateTime.now()); // Nastavenie aktuálneho času
 
             // Uloženie vozidla do databázy
-            vehicleRepository.save(newvehicle);
+            vehicleRepository.save(newVehicle);
 
-            // Logovanie úspešného pridania vozidla
             logger.info("Vozidlo úspešne pridané pre uživateľa {}: Značka: {}, Model: {}, VIN: {}, ŠPZ: {}, Dátum registrácie: {}",
-                    newvehicle.getCustomerId(), newvehicle.getBrand(), newvehicle.getModel(),
-                    newvehicle.getVin(), newvehicle.getPlateNo(),
-                    newvehicle.getRegisteredAt());
+                    newVehicle.getCustomerId(), newVehicle.getBrand(), newVehicle.getModel(),
+                    newVehicle.getVin(), newVehicle.getPlateNo(),
+                    newVehicle.getRegisteredAt());
 
-            return ResponseEntity.ok("Vozidlo úspešne pridané.");  // Vráti úspešnú odpoveď
+            return ResponseEntity.ok("Vozidlo úspešne pridané.");
         } catch (Exception e) {
-            // Logovanie chyby pri ukladaní vozidla
             logger.error("Chyba pri pridávaní vozidla: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");  // Vráti internú chybu servera
+            return ResponseEntity.status(500).body("Chyba pri spracovaní požiadavky!");
         }
     }
+
 
     @GetMapping("/count")
     @Operation(summary = "Počet vozidiel", description = "Zobrazí počet vozidiel celkovo")
@@ -180,7 +205,7 @@ public class VehicleController {
         Vehicle existingVehicle = existingVehicleOptional.get();
 
         try {
-            // Aktualizácia hodnôt vozidla
+            // Aktualizácia povinných hodnôt
             if (updatedVehicle.getCustomerId() != null) {
                 existingVehicle.setCustomerId(updatedVehicle.getCustomerId());
             }
@@ -217,6 +242,33 @@ public class VehicleController {
                 existingVehicle.setPlateNo(updatedVehicle.getPlateNo());
             }
 
+            // Aktualizácia voliteľných hodnôt
+            if (updatedVehicle.getFuel() != null) {
+                existingVehicle.setFuel(updatedVehicle.getFuel());
+            }
+            if (updatedVehicle.getColor() != null) {
+                existingVehicle.setColor(updatedVehicle.getColor());
+            }
+            if (updatedVehicle.getMileage() != null) {
+                existingVehicle.setMileage(updatedVehicle.getMileage());
+            }
+            if (updatedVehicle.getTireSize() != null) {
+                existingVehicle.setTireSize(updatedVehicle.getTireSize());
+            }
+            if (updatedVehicle.getLastServiced() != null) {
+                // Validácia formátu dátumu
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                try {
+                    LocalDate.parse(updatedVehicle.getLastServiced(), formatter);
+                    existingVehicle.setLastServiced(updatedVehicle.getLastServiced());
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.badRequest().body("Neplatný formát dátumu posledného servisu. Očakávaný formát: yyyy-MM-dd.");
+                }
+            }
+            if (updatedVehicle.getTransmissionType() != null) {
+                existingVehicle.setTransmissionType(updatedVehicle.getTransmissionType());
+            }
+
             // Uloženie aktualizovaného vozidla
             vehicleRepository.save(existingVehicle);
 
@@ -227,6 +279,7 @@ public class VehicleController {
             return ResponseEntity.status(500).body("Chyba pri aktualizácii vozidla!");
         }
     }
+
 
     @PutMapping("/delupdate/{id}")
     public ResponseEntity<?> deleteUpdateVehicle(@PathVariable Integer id) {

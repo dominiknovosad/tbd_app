@@ -2,7 +2,7 @@ package com.example.tbd.customer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import pre šifrovanie hesiel
-import org.springframework.stereotype.Service; // Import pre označenie triedy ako Spring Products
+import org.springframework.stereotype.Service; // Import pre označenie triedy ako Spring product
 import org.slf4j.Logger; // Import pre logovanie
 import org.slf4j.LoggerFactory; // Import pre vytvorenie loggeru
 
@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List; // Import pre zoznam zákazníkov
 import java.time.LocalDateTime;
 
-@Service // Označuje túto triedu ako Spring Products, ktorá spravuje logiku pre zákazníkov
+@Service // Označuje túto triedu ako Spring product, ktorá spravuje logiku pre zákazníkov
 public class CustomerService {
 
     private final CustomerRepository customerRepository; // Repository na komunikáciu s databázou

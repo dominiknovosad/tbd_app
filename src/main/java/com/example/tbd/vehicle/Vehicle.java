@@ -40,13 +40,24 @@ public class Vehicle {
     @JsonProperty("plate_no")
     private String plateNo;
 
+    @Column(name = "fuel")
+    private String fuel;
+    @Column(name = "color")
+    private String color;
+    @Column(name = "mileage")
+    private Integer mileage;
+    @Column(name = "transmission_sype")
+    private String transmissionType;
+    @Column(name = "tire_size", length = 15)
+    private String tireSize;
+    @Column(name = "last_serviced")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private String lastServiced;
     @Column(name = "deleted", nullable = false)
     private String deleted = "N";
-
     public String getDeleted() {
         return deleted;
     }
-
 
     // Vytvorenie dátumu a času pre časovú značku "created_at", nastavuje sa automaticky
     @Column(name = "created_at", nullable = false, updatable = false)  // Stĺpec pre dátum a čas vytvorenia, ktorý sa neaktualizuje
@@ -58,19 +69,15 @@ public class Vehicle {
     public Integer getId() {
         return id;
     }
-
     public void setId(Integer id) {
         this.id = id;
     }
-
     public Integer getCustomerId() {
         return customerId;
     }
-
     public void setCustomerId(Integer customerId) {
         this.customerId = customerId;
     }
-
     public String getBrand() {
         return brand;
     }
@@ -78,47 +85,72 @@ public class Vehicle {
     public void setBrand(String brand) {
         this.brand = brand;
     }
-
     public String getModel() {
         return model;
     }
-
     public void setModel(String model) {
         this.model = model;
     }
-
     public String getRegisteredAt() {
         return registeredAt;
     }
-
     public void setRegisteredAt(String registeredAt) {
         this.registeredAt = registeredAt;
     }
-
     public String getVin() {
         return vin;
     }
-
     public void setVin(String vin) {
         this.vin = vin;
     }
-
     public String getPlateNo() {
         return plateNo;
     }
-
     public void setPlateNo(String plateNo) {
         this.plateNo = plateNo;
     }
-
+    public String getFuel() {
+        return fuel;
+    }
+    public void setFuel(String fuel) {
+        this.fuel = fuel;
+    }
+    public String getColor() {
+        return color;
+    }
+    public void setColor(String color) {
+        this.color = color;
+    }
+    public Integer getMileage() {
+        return mileage;
+    }
+    public void setMileage(Integer mileage) {
+        this.mileage = mileage;
+    }
+    public String getTransmissionType() {
+        return transmissionType;
+    }
+    public void setTransmissionType(String transmissionType) {
+        this.transmissionType = transmissionType;
+    }
+    public String getTireSize() {
+        return tireSize;
+    }
+    public void setTireSize(String tireSize) {
+        this.tireSize = tireSize;
+    }
+    public String getLastServiced() {
+        return lastServiced;
+    }
+    public void setLastServiced(String lastServiced) {
+        this.lastServiced = lastServiced;
+    }
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-
     public void setDeleted(String deleted) {
         this.deleted = deleted;
     }
