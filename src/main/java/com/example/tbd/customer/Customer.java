@@ -18,7 +18,7 @@ public class Customer {
 
     @Id // Označuje primárny kľúč
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Automatické generovanie hodnoty ID
-    private Integer id;
+    private Long id;
 
     @Column(name = "name", nullable = false) // Názov stĺpca v tabuľke pre meno zákazníka
     @NotNull // Zabezpečuje, že meno nemôže byť prázdne
@@ -78,17 +78,17 @@ public class Customer {
     }
 
     // Rozhranie pre CustomerRepository, ktoré umožňuje prístup k údajom zákazníkov v databáze
-    public interface CustomerRepository extends JpaRepository<Customer, Integer> {
-        boolean existsById(Integer id);  // Metóda na overenie existencie zákazníka podľa ID
+    public interface CustomerRepository extends JpaRepository<Customer, Long> {
+        boolean existsById(Long id);  // Metóda na overenie existencie zákazníka podľa ID
     }
 
     // Gettery a settery pre všetky atribúty triedy Customer
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

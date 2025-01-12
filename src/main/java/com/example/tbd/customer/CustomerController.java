@@ -1,6 +1,7 @@
 package com.example.tbd.customer;
 
 import com.example.tbd.JwtTokenUtil;
+import com.example.tbd.company.CompanyController;
 import com.example.tbd.company.CompanyRepository;
 import io.jsonwebtoken.security.Keys; // Import pre generovanie bezpečného kľúča
 import io.swagger.v3.oas.annotations.Operation; // Import pre anotácie OpenAPI
@@ -27,30 +28,33 @@ import org.slf4j.LoggerFactory;
 @Tag(name = "Customer Controller", description = "API pre správu zákazníkov a autentifikáciu") // OpenAPI anotácia pre generovanie dokumentácie
 public class CustomerController {
 
-    private final CustomerService customerService; // Služba na spracovanie logiky pre zákazníkov
-    private final CustomerRepository repository; // Repository pre komunikáciu s databázou
-    private final AuthenticationManager authenticationManager; // Manažér autentifikácie na autentifikovanie používateľov
-    private final Key secretKey; // Kľúč pre šifrovanie JWT tokenu
+    private static final Logger logger = LoggerFactory.getLogger(CompanyController.class);
+    private final PasswordEncoder passwordEncoder;
+    private final CustomerService customerService;
+    private final CustomerRepository customerRepository;
+    private final AuthenticationManager authenticationManager;
+    private final Key secretKey;
+    private final JwtTokenUtil jwtTokenUtil; // Pridané do konštruktora
+    private final CompanyRepository companyRepository; // Pridané do konštruktora
 
-    // Konštruktor triedy, injektuje závislosti
+    // Konštruktor s injekciou všetkých závislostí
     @Autowired
     public CustomerController(
             CustomerService service,
             AuthenticationManager authenticationManager,
             CustomerRepository repository,
-            @Value("${jwt.secret}") String jwtSecret) {
+            PasswordEncoder passwordEncoder,
+            @Value("${jwt.secret}") String jwtSecret,
+            JwtTokenUtil jwtTokenUtil, // Pridané
+            CompanyRepository companyRepository) { // Pridané
         this.customerService = service;
         this.authenticationManager = authenticationManager;
-        this.repository = repository;
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Inicializuje kľúč pre generovanie tokenu
+        this.customerRepository = repository;
+        this.passwordEncoder = passwordEncoder;
+        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        this.jwtTokenUtil = jwtTokenUtil; // Inicializácia
+        this.companyRepository = companyRepository; // Inicializácia
     }
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private JwtTokenUtil jwtTokenUtil;  // Injektovanie JwtTokenUtil
-    @Autowired
-    private CompanyRepository companyRepository;
 
     // Pomocná metóda na konverziu LocalDate na java.util.Date
     public static Date convertToDate(LocalDate localDate) {
@@ -60,71 +64,113 @@ public class CustomerController {
     // Endpoint pre prihlásenie zákazníka
 
     @PostMapping("/login")
-    @Operation(summary = "Prihlásenie zákazníka alebo firmy", description = "Autentifikácia používateľa na základe e-mailu/ičo a hesla.")
+    @Operation(summary = "Prihlásenie zákazníka alebo firmy", description = "Autentifikácia používateľa na základe e-mailu/IČO a hesla.")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        Logger logger = LoggerFactory.getLogger(CustomerController.class); // Definícia logera
-
         logger.debug("Prijatý LoginRequest - Username: {}, Password: {}", loginRequest.getUsername(), loginRequest.getPassword());
 
-        // Validácia prichádzajúcich údajov
+        // Validácia vstupných údajov
         if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty() ||
                 loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
-            logger.warn("Chýbajúce prihlasovacie údaje! Ukončujem spracovanie.");
-            return ResponseEntity.badRequest().body("Chýbajúce prihlasovacie údaje!"); // Vráti chybu, ak sú údaje neúplné
+            logger.warn("Chýbajúce prihlasovacie údaje!");
+            return ResponseEntity.badRequest().body("Chýbajúce prihlasovacie údaje!");
         }
 
         try {
-            Customer customer = null;
-            Company company = null;
-
-            // Skontroluj, či je email alebo IČO platný a podľa toho vykonaj autentifikáciu
+            // Rozhodovanie podľa formátu username (e-mail alebo IČO)
             if (loginRequest.getUsername().contains("@")) {
-                // Prihlásenie zákazníka podľa emailu
-                customer = repository.findByEmail(loginRequest.getUsername())
-                        .orElseThrow(() -> {
-                            logger.warn("Zákazník nenájdený pre e-mail: {}", loginRequest.getUsername());
-                            return new RuntimeException("Zákazník nenájdený!"); // Vráti chybu, ak zákazník neexistuje
-                        });
-
-                // Autentifikácia pomocou e-mailu a hesla
-                if (!passwordEncoder.matches(loginRequest.getPassword(), customer.getPassword())) {
-                    logger.warn("Nesprávne prihlasovacie údaje pre e-mail: {}", loginRequest.getUsername());
-                    return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Nesprávne heslo
-                }
-
-                // Vytvorenie JWT tokenu pre zákazníka
-                String token = jwtTokenUtil.generateToken(customer.getEmail(), customer.getId(), customer.getEmail());
-                logger.info("Prihlásenie úspešné. Vygenerovaný token pre zákazníka: {}", customer.getEmail());
-                return ResponseEntity.ok(new LoginResponse(token, customer.getId()));
-
+                // Prihlásenie zákazníka podľa e-mailu
+                return handleCustomerLogin(loginRequest);
             } else {
                 // Prihlásenie firmy podľa IČO
-                company = companyRepository.findByIco(Integer.parseInt(loginRequest.getUsername()))
-                        .orElseThrow(() -> {
-                            logger.warn("Firma nenájdená pre IČO: {}", loginRequest.getUsername());
-                            return new RuntimeException("Firma nenájdená!"); // Vráti chybu, ak firma neexistuje
-                        });
-
-                // Autentifikácia pomocou IČO a hesla
-                if (!passwordEncoder.matches(loginRequest.getPassword(), company.getPassword())) {
-                    logger.warn("Nesprávne prihlasovacie údaje pre IČO: {}", loginRequest.getUsername());
-                    return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!"); // Nesprávne heslo
-                }
-
-                // Vytvorenie JWT tokenu pre firmu
-                String token = jwtTokenUtil.generateToken(company.getIco().toString(), company.getId(), company.getIco().toString());
-                logger.info("Prihlásenie úspešné. Vygenerovaný token pre firmu: {}", company.getIco());
-                return ResponseEntity.ok(new LoginResponse(token, company.getId()));
+                return handleCompanyLogin(loginRequest);
             }
-
         } catch (RuntimeException e) {
             logger.error("Chyba pri prihlásení: {}", e.getMessage());
-            return ResponseEntity.status(401).body(e.getMessage()); // Vráti chybu pri nesprávnom prihlásení
+            return ResponseEntity.status(401).body(e.getMessage());
         } catch (Exception e) {
             logger.error("Neznáma chyba pri prihlásení: {}", e.getMessage());
-            return ResponseEntity.status(500).body("Interná chyba servera!"); // Vráti internú chybu servera
+            return ResponseEntity.status(500).body("Interná chyba servera!");
         }
     }
+
+    private ResponseEntity<?> handleCustomerLogin(LoginRequest loginRequest) {
+        try {
+            // Hľadanie zákazníka podľa e-mailu
+            Customer customer = customerRepository.findByEmail(loginRequest.getUsername())
+                    .orElseThrow(() -> {
+                        logger.warn("Zákazník nenájdený pre e-mail: {}", loginRequest.getUsername());
+                        return new RuntimeException("Zákazník nenájdený!");
+                    });
+
+            // Overenie hesla
+            if (!passwordEncoder.matches(loginRequest.getPassword(), customer.getPassword())) {
+                logger.warn("Nesprávne prihlasovacie údaje pre e-mail: {}", loginRequest.getUsername());
+                return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!");
+            }
+
+            // Generovanie tokenu
+            String token = jwtTokenUtil.generateToken(customer.getEmail(), customer.getId(), customer.getEmail());
+            logger.info("Prihlásenie úspešné. Vygenerovaný token pre zákazníka: {}", customer.getEmail());
+
+            return ResponseEntity.ok(new LoginResponse(token, customer.getId()));
+        } catch (RuntimeException e) {
+            logger.error("Chyba pri prihlásení zákazníka: {}", e.getMessage());
+            throw e; // Výnimka sa spracuje v hlavnej metóde
+        } catch (Exception e) {
+            logger.error("Neznáma chyba pri prihlásení zákazníka: {}", e.getMessage());
+            throw e; // Výnimka sa spracuje v hlavnej metóde
+        }
+    }
+
+    private ResponseEntity<?> handleCompanyLogin(LoginRequest loginRequest) {
+        try {
+            // Hľadanie firmy podľa IČO
+            Company company = companyRepository.findByIco(Integer.parseInt(loginRequest.getUsername()))
+                    .orElseThrow(() -> {
+                        logger.warn("Firma nenájdená pre IČO: {}", loginRequest.getUsername());
+                        return new RuntimeException("Firma nenájdená!");
+                    });
+
+            // Overenie hesla
+            if (!passwordEncoder.matches(loginRequest.getPassword(), company.getPassword())) {
+                logger.warn("Nesprávne prihlasovacie údaje pre IČO: {}", loginRequest.getUsername());
+                return ResponseEntity.status(401).body("Nesprávne prihlasovacie údaje!");
+            }
+
+            // Generovanie tokenu
+            String token = jwtTokenUtil.generateToken(company.getIco().toString(), company.getId(), company.getIco().toString());
+            logger.info("Prihlásenie úspešné. Vygenerovaný token pre firmu: {}", company.getIco());
+
+            return ResponseEntity.ok(new LoginResponse(token, company.getId()));
+        } catch (RuntimeException e) {
+            logger.error("Chyba pri prihlásení firmy: {}", e.getMessage());
+            throw e; // Výnimka sa spracuje v hlavnej metóde
+        } catch (Exception e) {
+            logger.error("Neznáma chyba pri prihlásení firmy: {}", e.getMessage());
+            throw e; // Výnimka sa spracuje v hlavnej metóde
+        }
+    }
+
+
+    // Trieda pre odpoveď pri prihlásení obsahujúca token a ID zákazníka
+    static class LoginResponse {
+        private final String token; // JWT token
+        private final Long customerId; // ID zákazníka
+
+        public LoginResponse(String token, Long customerId) {
+            this.token = token;
+            this.customerId = customerId;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public Long getCustomerId() {
+            return customerId;
+        }
+    }
+
 
     // Endpoint na registráciu nového zákazníka
     @PostMapping("/register")
@@ -159,27 +205,10 @@ public class CustomerController {
             return ResponseEntity.status(500).body("An error occurred while processing the request."); // Vráti chybu pri spracovaní požiadavky
         }
     }
-
-    // Endpoint na získanie zákazníka podľa ID
-    @GetMapping("/{id}")
-    @Operation(summary = "Získa zákazníka podľa ID", description = "Vráti detail zákazníka na základe jeho ID.")
-    public ResponseEntity<Customer> getCustomer(@PathVariable("id") Integer id) {
-        System.out.println("DEBUG: Načítavanie zákazníka s ID: " + id);
-        return ResponseEntity.ok(customerService.getCustomerById(id)); // Vráti zákazníka podľa ID
-    }
-
-    // Endpoint na získanie všetkých zákazníkov
-    @GetMapping("/all")
-    @Operation(summary = "Získa všetkých zákazníkov", description = "Vráti zoznam všetkých zákazníkov.")
-    public ResponseEntity<List<Customer>> getAllCustomers() {
-        System.out.println("DEBUG: Načítavanie všetkých zákazníkov");
-        return ResponseEntity.ok(customerService.getAll()); // Vráti zoznam všetkých zákazníkov
-    }
-
     @PutMapping("/editprofile/{id}")
     public ResponseEntity<String> editProfile(@PathVariable Long id,
                                               @RequestBody @Validated UpdateProfileRequest editProfileRequest) {
-        boolean isUpdated = customerService.updateCustomerProfile(Math.toIntExact(id), editProfileRequest);
+        boolean isUpdated = customerService.updateCustomerProfile(id, editProfileRequest);
 
         if (isUpdated) {
             return ResponseEntity.ok("Profil bol úspešne aktualizovaný.");
@@ -187,23 +216,27 @@ public class CustomerController {
             return ResponseEntity.status(404).body("Zákazník s týmto ID neexistuje.");
         }
     }
-    // Trieda pre odpoveď pri prihlásení obsahujúca token a ID zákazníka
-    static class LoginResponse {
-        private final String token; // JWT token
-        private final Integer customerId; // ID zákazníka
 
-        public LoginResponse(String token, Integer customerId) {
-            this.token = token;
-            this.customerId = customerId;
-        }
+    // Endpoint na získanie zákazníka podľa ID
+    // Endpoint na získanie zákazníka podľa ID
+    @GetMapping("/{id}")
+    @Operation(summary = "Získa zákazníka podľa ID", description = "Vráti detail zákazníka na základe jeho ID.")
+    public ResponseEntity<CustomerDTO> getCustomer(@PathVariable("id") Long id) {
+        System.out.println("DEBUG: Načítavanie zákazníka s ID: " + id);
+        CustomerDTO customerDTO = customerService.getCustomerById(id);
+        return ResponseEntity.ok(customerDTO); // Vráti zákazníka ako DTO
+    }
 
-        public String getToken() {
-            return token;
+    // Endpoint na získanie všetkých zákazníkov
+    @GetMapping("/all")
+    @Operation(summary = "Získa všetkých zákazníkov", description = "Vráti zoznam všetkých zákazníkov.")
+    public ResponseEntity<List<CustomerDTO>> getAllCustomers() {
+        System.out.println("DEBUG: Načítavanie všetkých zákazníkov");
+        List<CustomerDTO> customers = customerService.getAllCustomers();
+        if (customers.isEmpty()) {
+            return ResponseEntity.noContent().build(); // Vráti 204 No Content, ak nie sú žiadni zákazníci
         }
-
-        public Integer getCustomerId() {
-            return customerId;
-        }
+        return ResponseEntity.ok(customers); // Vráti zoznam zákazníkov ako DTO
     }
 
     @GetMapping("/count")

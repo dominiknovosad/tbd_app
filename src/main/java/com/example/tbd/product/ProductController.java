@@ -19,12 +19,17 @@ import java.util.Optional;
 public class ProductController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
+    private final ProductRepository productRepository;
+    private final CompanyRepository companyRepository;
+    private final ProductService productService;
 
-    private ProductRepository productRepository;
-    private CompanyRepository companyRepository;
-    private ProductService productService;
+    // Konštruktor s injekciou všetkých závislostí
     @Autowired
-    public ProductController(ProductService productService) {
+    public ProductController(ProductRepository productRepository,
+                             CompanyRepository companyRepository,
+                             ProductService productService) {
+        this.productRepository = productRepository;
+        this.companyRepository = companyRepository;
         this.productService = productService;
     }
 

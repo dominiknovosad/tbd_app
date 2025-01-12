@@ -1,7 +1,7 @@
 package com.example.tbd.company;
 
-public class CompanyOutputNoPW {
-    private Integer id;
+public class CompanyDTO {
+    private Long id;
     private String companyName;
     private Integer ico;
     private String email;
@@ -9,11 +9,11 @@ public class CompanyOutputNoPW {
     private String address;
 
     // Gettery a settery
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

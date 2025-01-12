@@ -21,16 +21,18 @@ import java.util.Optional;
 @Tag(name = "Vehicle Controller", description = "API pre správu vozidel")
 public class VehicleController {
 
-    private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);  // SLF4J logger na logovanie informácií
+    private static final Logger logger = LoggerFactory.getLogger(VehicleController.class); // SLF4J logger
+    private final VehicleRepository vehicleRepository;
+    private final CustomerRepository customerRepository;
+    private final VehicleService vehicleService;
 
+    // Konštruktor s injekciou všetkých závislostí
     @Autowired
-    private VehicleRepository vehicleRepository;  // Injektuje VehicleRepository pre prístup k údajom o vozidlách
-
-    @Autowired
-    private CustomerRepository customerRepository;  // Injektuje CustomerRepository pre kontrolu existencie zákazníka
-    private VehicleService vehicleService;
-    @Autowired
-    public VehicleController(VehicleService vehicleService) {
+    public VehicleController(VehicleRepository vehicleRepository,
+                             CustomerRepository customerRepository,
+                             VehicleService vehicleService) {
+        this.vehicleRepository = vehicleRepository;
+        this.customerRepository = customerRepository;
         this.vehicleService = vehicleService;
     }
 
@@ -144,48 +146,48 @@ public class VehicleController {
 
     // Endpoint na získanie všetkých vozidiel
     @GetMapping("/showall")
-    public ResponseEntity<List<Vehicle>> getAllVehicles() {
-        List<Vehicle> vehicles = vehicleRepository.findAll();
+    public ResponseEntity<List<VehicleDTO>> getAllVehicles() {
+        List<VehicleDTO> vehicles = vehicleService.getAllVehicles();
         if (vehicles.isEmpty()) {
-            return ResponseEntity.noContent().build();  // Vráti 204 No Content, ak nie sú žiadne vozidlá
+            return ResponseEntity.noContent().build(); // Vráti 204 No Content, ak nie sú žiadne vozidlá
         }
-        return ResponseEntity.ok(vehicles);  // Vráti zoznam všetkých vozidiel (200 OK)
+        return ResponseEntity.ok(vehicles); // Vráti zoznam všetkých vozidiel (200 OK)
     }
 
     // Endpoint na získanie vozidla podľa ID
-    @GetMapping("/id/{id}")  // Použitie "/{id}" pre získanie vozidla podľa ID
-    public ResponseEntity<Vehicle> getVehicleById(@PathVariable Integer id) {
-        Optional<Vehicle> vehicle = vehicleRepository.findById(id);
-        if (vehicle.isEmpty()) {
-            return ResponseEntity.notFound().build();  // Vráti 404 Not Found, ak vozidlo neexistuje
+    @GetMapping("/id/{id}")  // Endpoint na získanie vozidla podľa ID
+    public ResponseEntity<?> getVehicleById(@PathVariable Long id) {
+        Optional<VehicleDTO> vehicleOutput = vehicleService.findById(id);
+        if (vehicleOutput.isEmpty()) {
+            // Vráti 404 Not Found s vlastnou textovou správou
+            logger.debug("Vozidlo s ID {} nebolo nájdené.", id);
+            return ResponseEntity.status(404).body("Vozidlo s ID " + id + " nebolo nájdené.");
         }
-        return ResponseEntity.ok(vehicle.get());  // Vráti 200 OK so záznamom vozidla
+        return ResponseEntity.ok(vehicleOutput.get()); // Vráti 200 OK so záznamom vozidla
     }
 
     // Endpoint na získanie vozidla podľa VIN kódu
-    @GetMapping("/vin/{vin}")  // Použitie "/vin/{vin}" pre získanie vozidla podľa VIN
-    public ResponseEntity<Vehicle> getVehicleByVin(@PathVariable String vin) {
-        Optional<Vehicle> vehicle = vehicleRepository.findByVin(vin);
-        if (vehicle.isEmpty()) {
-            return ResponseEntity.notFound().build();  // Vráti 404 Not Found, ak vozidlo neexistuje
+    @GetMapping("/vin/{vin}")  // Endpoint na získanie vozidla podľa VIN
+    public ResponseEntity<?> getVehicleByVin(@PathVariable String vin) {
+        Optional<VehicleDTO> vehicleOutput = vehicleService.findByVin(vin);
+        if (vehicleOutput.isEmpty()) {
+            logger.debug("Vozidlo s VIN {} nebolo nájdené.", vin);
+            // Vráti 404 Not Found s vlastnou textovou správou
+            return ResponseEntity.status(404).body("Vozidlo s VIN " + vin + " nebolo nájdené.");
         }
-        return ResponseEntity.ok(vehicle.get());  // Vráti 200 OK so záznamom vozidla
+        return ResponseEntity.ok(vehicleOutput.get());
     }
-
     // Endpoint na získanie vozidiel podľa ID zákazníka
     @GetMapping("/customerid/{customerId}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByCustomerId(@PathVariable Integer customerId) {
-        // Načítanie vozidiel, kde deleted = 'N'
-        List<Vehicle> vehicles = vehicleRepository.findByCustomerIdAndDeleted(customerId, "N");
+    public ResponseEntity<?> getVehiclesByCustomerId(@PathVariable Long customerId) {
+        List<VehicleDTO> vehicles = vehicleService.findByCustomerId(customerId);
         logger.debug("Zobrazené aktívne vozidlá pre customerId {}: {}", customerId, vehicles);
-
         if (vehicles.isEmpty()) {
-            return ResponseEntity.noContent().build(); // 204 No Content, ak žiadne vozidlá neexistujú
+            // Vráti 204 No Content s vlastnou správou
+            return ResponseEntity.status(204).body("Pre customerId " + customerId + " neexistujú žiadne aktívne vozidlá.");
         }
-
-        return ResponseEntity.ok(vehicles); // 200 OK, vráti zoznam vozidiel
+        return ResponseEntity.ok(vehicles);
     }
-
     @PutMapping("/update")
     public ResponseEntity<?> updateVehicle(@RequestBody Vehicle updatedVehicle) {
         logger.debug("Prijatý požiadavka na aktualizáciu vozidla - {}", updatedVehicle);

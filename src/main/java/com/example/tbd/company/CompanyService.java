@@ -1,16 +1,13 @@
 package com.example.tbd.company;
 
-import com.example.tbd.customer.CustomerRepository; // Import repository pre prácu so zákazníkmi
+
 import org.slf4j.Logger; // Import loggera pre logovanie informácií
 import org.slf4j.LoggerFactory; // Import na vytvorenie inštancie loggera
 import org.springframework.beans.factory.annotation.Autowired; // Import pre automatické injektovanie závislostí
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder; // Import pre šifrovanie hesiel
 import org.springframework.stereotype.Service; // Anotácia pre označenie triedy ako Spring služby
-
 import java.time.LocalDateTime;
 import java.util.List; // Import pre prácu so zoznamami
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service // Anotácia označujúca triedu ako Spring službu, ktorú je možné injektovať do iných komponentov
@@ -60,12 +57,12 @@ public class CompanyService {
     }
 
     // Metóda na získanie všetkých firiem
-    public List<CompanyOutputNoPW> getAllCompany() {
+    public List<CompanyDTO> getAllCompany() {
         logger.info("Načítavam všetky firmy:");
         List<Company> companies = companyRepository.findAll(); // Načítanie všetkých spoločností
         return companies.stream()
                 .map(company -> {
-                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    CompanyDTO output = new CompanyDTO();
                     output.setId(company.getId());
                     output.setCompanyName(company.getCompanyName());
                     output.setIco(company.getIco());
@@ -77,7 +74,7 @@ public class CompanyService {
                 .collect(Collectors.toList());
     }
 
-    public List<CompanyOutputNoPW> getByEmail(String email) {
+    public List<CompanyDTO> getByEmail(String email) {
         logger.info("Načítavam firmy s e-mailom: {}", email); // Logovanie pre načítanie firiem podľa e-mailu
         List<Company> companies = companyRepository.findByEmail(email);
         if (companies.isEmpty()) {
@@ -87,7 +84,7 @@ public class CompanyService {
         }
         return companies.stream()
                 .map(company -> {
-                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    CompanyDTO output = new CompanyDTO();
                     output.setId(company.getId());
                     output.setCompanyName(company.getCompanyName());
                     output.setIco(company.getIco());
@@ -100,7 +97,7 @@ public class CompanyService {
     }
 
     // Metóda na získanie všetkých firiem podľa názvu
-    public List<CompanyOutputNoPW> getByCompanyName(String companyName) {
+    public List<CompanyDTO> getByCompanyName(String companyName) {
         logger.info("Načítavam firmy podľa názvu: {}", companyName); // Logovanie pred načítaním firiem podľa názvu
         List<Company> companies = companyRepository.findByCompanyName(companyName);
         if (companies.isEmpty()) {
@@ -110,7 +107,7 @@ public class CompanyService {
         }
         return companies.stream()
                 .map(company -> {
-                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    CompanyDTO output = new CompanyDTO();
                     output.setId(company.getId());
                     output.setCompanyName(company.getCompanyName());
                     output.setIco(company.getIco());
@@ -123,7 +120,7 @@ public class CompanyService {
     }
 
     // Metóda na získanie spoločnosti podľa IČO
-    public List<CompanyOutputNoPW> getCompanyByIco(Integer ico) {
+    public List<CompanyDTO> getCompanyByIco(Integer ico) {
         logger.info("Načítavam firmy podľa IČO: {}", ico); // Logovanie pred načítaním firiem
         List<Company> companies = companyRepository.findAllByIco(ico);
         if (companies.isEmpty()) {
@@ -135,7 +132,7 @@ public class CompanyService {
         }
         return companies.stream()
                 .map(company -> {
-                    CompanyOutputNoPW output = new CompanyOutputNoPW();
+                    CompanyDTO output = new CompanyDTO();
                     output.setId(company.getId());
                     output.setCompanyName(company.getCompanyName());
                     output.setIco(company.getIco());

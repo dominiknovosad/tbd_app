@@ -15,7 +15,7 @@ public class Company {
 
     @Id // Označuje primárny kľúč tejto entity
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Anotácia pre automatické generovanie hodnôt pre primárny kľúč v databáze (inkrementované číslo)
-    private Integer id; // ID spoločnosti, bude primárnym kľúčom v databáze
+    private Long id; // ID spoločnosti, bude primárnym kľúčom v databáze
 
     @Column(name = "company_name") // Určuje názov stĺpca v databáze, ktorý bude zodpovedať tomuto atribútu
     @NotNull(message = "Názov spoločnosti nesmie byť prázdny") // Validácia, aby názov spoločnosti nebol prázdny
@@ -50,11 +50,11 @@ public class Company {
 
     // Gettery a settery pre jednotlivé atribúty
 
-    public Integer getId() {
+    public Long getId() {
         return id; // Getter pre ID spoločnosti
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id; // Setter pre ID spoločnosti
     }
 

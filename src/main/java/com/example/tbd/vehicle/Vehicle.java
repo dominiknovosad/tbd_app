@@ -17,10 +17,10 @@ public class Vehicle {
 
     @Id  // Označuje primárny kľúč
     @GeneratedValue(strategy = GenerationType.IDENTITY)  // Nastavenie automatického generovania hodnôt pre primárny kľúč
-    private Integer id;  // ID vozidla
+    private Long id;  // ID vozidla
 
     @Column(name = "customer_id", nullable = false)  // Názov stĺpca v databáze, s podmienkou, že hodnota nemôže byť null
-    private Integer customerId;  // ID zákazníka, ktorý vlastní vozidlo
+    private Long customerId;  // ID zákazníka, ktorý vlastní vozidlo
 
     @Column(nullable = false)  // Označuje, že hodnota nesmie byť null
     private String brand;  // Značka vozidla
@@ -46,7 +46,7 @@ public class Vehicle {
     private String color;
     @Column(name = "mileage")
     private Integer mileage;
-    @Column(name = "transmission_sype")
+    @Column(name = "transmission_type")
     private String transmissionType;
     @Column(name = "tire_size", length = 15)
     private String tireSize;
@@ -66,16 +66,16 @@ public class Vehicle {
     private LocalDateTime createdAt;  // Dátum a čas vytvorenia vozidla (LocalDateTime obsahuje dátum aj čas)
 
     // Gettery a settery pre všetky atribúty
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
-    public Integer getCustomerId() {
+    public Long getCustomerId() {
         return customerId;
     }
-    public void setCustomerId(Integer customerId) {
+    public void setCustomerId(Long customerId) {
         this.customerId = customerId;
     }
     public String getBrand() {
@@ -154,4 +154,5 @@ public class Vehicle {
     public void setDeleted(String deleted) {
         this.deleted = deleted;
     }
+
 }

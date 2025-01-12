@@ -126,16 +126,36 @@
 			<artifactId>assertj-core</artifactId>
 			<version>3.24.2</version>
 		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>1.5.5.Final</version> <!-- Aktuálna verzia -->
+		</dependency>
+		<!-- Annotation Processor for MapStruct -->
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-processor</artifactId>
+			<version>1.5.5.Final</version>
+			<scope>provided</scope>
+		</dependency>
 
 	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.2.0</version>  <!-- Zmeňte verziu na novšiu -->
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version> <!-- Skontrolujte verziu Maven Compiler Plugin -->
 				<configuration>
-					<encoding>UTF-8</encoding> <!-- Skontroluj kódovanie -->
+					<source>21</source> <!-- Vaša verzia Javy -->
+					<target>21</target> <!-- Vaša verzia Javy -->
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>1.5.5.Final</version> <!-- Aktuálna verzia MapStruct Processor -->
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 		</plugins>

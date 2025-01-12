@@ -22,12 +22,23 @@ import java.util.Optional;
 public class CompanyController {
 
     private static final Logger logger = LoggerFactory.getLogger(CompanyController.class); // Define the logger here
-
     private final CompanyService companyService;
     private final CompanyRepository companyRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
+    @Autowired
+    public CompanyController(CompanyService companyService,
+                             CompanyRepository companyRepository,
+                             AuthenticationManager authenticationManager,
+                             JwtTokenUtil jwtTokenUtil,
+                             PasswordEncoder passwordEncoder) {
+        this.companyService = companyService;
+        this.companyRepository = companyRepository;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.passwordEncoder = passwordEncoder;
+    }
     /**
      * Získanie údajov o spoločnosti podľa ID.
      *
@@ -42,7 +53,7 @@ public class CompanyController {
         }
         Company company = companyOptional.get();
         // Prevod entity Company na CompanyOutputDTO
-        CompanyOutputNoPW dto = new CompanyOutputNoPW();
+        CompanyDTO dto = new CompanyDTO();
         dto.setId(company.getId());
         dto.setCompanyName(company.getCompanyName());
         dto.setIco(company.getIco());
@@ -51,18 +62,6 @@ public class CompanyController {
         dto.setAddress(company.getAddress());
 
         return ResponseEntity.ok(dto);
-    }
-    @Autowired
-    public CompanyController(CompanyService companyService,
-                             CompanyRepository companyRepository,
-                             AuthenticationManager authenticationManager,
-                             JwtTokenUtil jwtTokenUtil,
-                             PasswordEncoder passwordEncoder) {
-        this.companyService = companyService;
-        this.companyRepository = companyRepository;
-        this.authenticationManager = authenticationManager;
-        this.jwtTokenUtil = jwtTokenUtil;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
@@ -89,7 +88,6 @@ public class CompanyController {
 
             String token = jwtTokenUtil.generateToken(company.getIco().toString(), company.getId(), company.getIco().toString());
             logger.info("Prihlásenie úspešné. Vygenerovaný token pre firmu: {}", company.getIco());
-
             return ResponseEntity.ok(new LoginResponse(token, company.getId()));
 
         } catch (RuntimeException e) {
@@ -100,21 +98,18 @@ public class CompanyController {
             return ResponseEntity.status(500).body("Interná chyba servera!");
         }
     }
-
     static class LoginResponse {
         private final String token;
-        private final Integer companyId;
+        private final Long companyId;
 
-        public LoginResponse(String token, Integer companyId) {
+        public LoginResponse(String token, Long companyId) {
             this.token = token;
             this.companyId = companyId;
         }
-
         public String getToken() {
             return token;
         }
-
-        public Integer getCompanyId() {
+        public Long getCompanyId() {
             return companyId;
         }
     }
@@ -147,8 +142,8 @@ public class CompanyController {
     }
     @GetMapping("/all")
     @Operation(summary = "Získa všetky firmy", description = "Vráti zoznam všetkých firiem bez hesla.")
-    public ResponseEntity<List<CompanyOutputNoPW>> getAllCompanies() {
-        List<CompanyOutputNoPW> companies = companyService.getAllCompany();
+    public ResponseEntity<List<CompanyDTO>> getAllCompanies() {
+        List<CompanyDTO> companies = companyService.getAllCompany();
         if (companies.isEmpty()) {
             return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
         }
@@ -157,8 +152,8 @@ public class CompanyController {
 
     @GetMapping("/byemail")
     @Operation(summary = "Zobrazí firmu podľa emailu", description = "Zobrazí firmu podľa emailu.")
-    public ResponseEntity<List<CompanyOutputNoPW>> getByEmail(@RequestParam String email) {
-        List<CompanyOutputNoPW> companies = companyService.getByEmail(email);
+    public ResponseEntity<List<CompanyDTO>> getByEmail(@RequestParam String email) {
+        List<CompanyDTO> companies = companyService.getByEmail(email);
         if (companies.isEmpty()) {
             return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
         }
@@ -167,8 +162,8 @@ public class CompanyController {
 
     @GetMapping("/bycompanyname")
     @Operation(summary = "Zobrazí firmy podľa názvu", description = "Zobrazí firmy podľa názvu.")
-    public ResponseEntity<List<CompanyOutputNoPW>> getByCompanyName(@RequestParam String companyName) {
-        List<CompanyOutputNoPW> companies = companyService.getByCompanyName(companyName);
+    public ResponseEntity<List<CompanyDTO>> getByCompanyName(@RequestParam String companyName) {
+        List<CompanyDTO> companies = companyService.getByCompanyName(companyName);
         if (companies.isEmpty()) {
             return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
         }
@@ -177,8 +172,8 @@ public class CompanyController {
 
     @GetMapping("/byico")
     @Operation(summary = "Zobrazí firmu podľa Ičo", description = "Zobrazí firmu podľa Ičo.")
-    public ResponseEntity<List<CompanyOutputNoPW>> getCompanyByIco(@RequestParam Integer ico) {
-        List<CompanyOutputNoPW> companies = companyService.getCompanyByIco(ico);
+    public ResponseEntity<List<CompanyDTO>> getCompanyByIco(@RequestParam Integer ico) {
+        List<CompanyDTO> companies = companyService.getCompanyByIco(ico);
         if (companies.isEmpty()) {
             return ResponseEntity.noContent().build(); // 204 No Content, ak firma neexistuje
         }
