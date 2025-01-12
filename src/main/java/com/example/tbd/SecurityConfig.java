@@ -44,6 +44,7 @@ public class SecurityConfig {
                         "/customer/{id}",
                         "/customer/count",
                         "/company/login",
+                        "/company/*",
                         "/company/byico",
                         "/company/register",
                         "/company/byemail",
