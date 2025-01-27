@@ -1,40 +1,44 @@
 package com.example.tbd.company;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class LoginRequest {
 
-    // Atribút pre IČO firmy, ktoré sa použije pri prihlásení
-    private String ico;      // IČO firmy
+    @Schema(description = "Používateľské meno firmy (IČO) na prihlásenie", example = "12345678")
+    @JsonProperty("username") // Príjme JSON kľúč "username" a mapuje ho na atribút "ico"
+    private String ico;
 
-    // Atribút pre heslo firmy, ktoré sa použije pri prihlásení
-    private String password; // Heslo firmy
+    @Schema(description = "Heslo firmy na prihlásenie", example = "heslo123")
+    private String password;
 
-    // Predvolený konštruktor (používaný napríklad pre deserializáciu JSON)
+    // Predvolený konštruktor
     public LoginRequest() {
     }
 
-    // Konštruktor, ktorý prijíma IČO a heslo ako argumenty
+    // Konštruktor s parametrami
     public LoginRequest(String ico, String password) {
-        this.ico = ico;       // Nastavenie IČO
-        this.password = password; // Nastavenie hesla
+        this.ico = ico;
+        this.password = password;
     }
 
-    // Getter (metóda na získanie hodnoty IČO)
+    // Getter pre IČO
     public String getIco() {
-        return ico; // Vráti IČO firmy
+        return ico;
     }
 
-    // Setter (metóda na nastavenie hodnoty IČO)
+    // Setter pre IČO
     public void setIco(String ico) {
-        this.ico = ico; // Nastaví IČO firmy
+        this.ico = ico;
     }
 
-    // Getter (metóda na získanie hodnoty hesla)
+    // Getter pre heslo
     public String getPassword() {
-        return password; // Vráti heslo firmy
+        return password;
     }
 
-    // Setter (metóda na nastavenie hodnoty hesla)
+    // Setter pre heslo
     public void setPassword(String password) {
-        this.password = password; // Nastaví heslo firmy
+        this.password = password;
     }
 }
